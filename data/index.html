@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Rotato Controller</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a2e">
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100svh;
+      padding: 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      gap: 16px;
+      touch-action: none;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    header {
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+      position: relative;
+    }
+    header h1 { font-size: 1.8rem; color: #e94560; letter-spacing: 2px; }
+    header p  { font-size: 0.8rem; color: #888; margin-top: 4px; }
+
+    /* ── Status Bar ─────────────────────────────────────────────────────── */
+    #status-bar {
+      width: 100%;
+      max-width: 500px;
+      background: #16213e;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .status-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+
+    /* Battery bar */
+    #battery-wrap { width: 80px; }
+    #battery-bar-bg {
+      height: 12px; background: #333; border-radius: 6px; overflow: hidden;
+    }
+    #battery-bar {
+      height: 100%; width: 0%; background: #4caf50;
+      border-radius: 6px; transition: width 0.5s, background 0.5s;
+    }
+    #battery-pct { font-size: 0.75rem; color: #aaa; text-align: center; }
+
+    /* Safety indicator */
+    #safety-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #4caf50; box-shadow: 0 0 8px #4caf50;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    #safety-dot.unsafe { background: #e94560; box-shadow: 0 0 8px #e94560; }
+
+    /* Connection indicator */
+    #conn-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #888; transition: background 0.3s;
+    }
+    #conn-dot.connected { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
+
+    /* IP address */
+    #ip-text { font-size: 0.75rem; color: #aaa; font-family: monospace; }
+
+    /* ── Joystick ────────────────────────────────────────────────────────── */
+    #joystick-container {
+      width: 100%;
+      max-width: 500px;
+      background: #16213e;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    #joystick-container h2 { font-size: 0.9rem; color: #888; text-transform: uppercase; }
+    #joystick-canvas {
+      border: 2px solid #e94560;
+      border-radius: 50%;
+      cursor: grab;
+      touch-action: none;
+      display: block;
+      width: min(240px, calc(100vw - 80px));
+      height: min(240px, calc(100vw - 80px));
+    }
+    #joystick-canvas:active { cursor: grabbing; }
+    #drive-values {
+      font-size: 0.75rem;
+      color: #555;
+      font-family: monospace;
+    }
+
+    /* ── Weapon Button ──────────────────────────────────────────────────── */
+    #weapon-container {
+      width: 100%;
+      max-width: 500px;
+      background: #16213e;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #weapon-container h2 { font-size: 0.9rem; color: #888; text-transform: uppercase; }
+    #weapon-btn {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      border: 3px solid #e94560;
+      background: #1a1a2e;
+      color: #e94560;
+      font-size: 1rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    #weapon-btn.active {
+      background: #e94560;
+      color: white;
+      box-shadow: 0 0 30px #e94560, 0 0 60px rgba(233,69,96,0.4);
+    }
+    #weapon-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: #555;
+      color: #555;
+    }
+    #safety-warning {
+      font-size: 0.75rem;
+      color: #e94560;
+      display: none;
+    }
+
+    /* ── WiFi Settings ──────────────────────────────────────────────────── */
+    #settings-btn {
+      width: 100%;
+      max-width: 500px;
+      padding: 12px;
+      background: #16213e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      color: #888;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    #settings-btn:hover { border-color: #e94560; color: #eee; }
+
+    /* ── Modal ──────────────────────────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #modal h2 { font-size: 1.1rem; color: #e94560; }
+    #modal p  { font-size: 0.8rem; color: #888; }
+    #modal input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #eee;
+      font-size: 0.9rem;
+    }
+    #modal input:focus { outline: none; border-color: #e94560; }
+    .modal-buttons { display: flex; gap: 12px; }
+    .modal-buttons button {
+      flex: 1; padding: 10px;
+      border-radius: 8px; border: none;
+      font-size: 0.9rem; cursor: pointer;
+    }
+    #modal-save { background: #e94560; color: white; }
+    #modal-cancel { background: #333; color: #aaa; }
+
+    /* ── Version footer ───────────────────────────────────────────────── */
+    #fw-version {
+      font-size: 0.7rem;
+      color: #444;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+      padding-bottom: 4px;
+    }
+
+    /* ── Fullscreen Button ──────────────────────────────────────────────── */
+    #fullscreen-btn {
+      position: absolute;
+      top: 0; right: 0;
+      width: 34px; height: 34px;
+      background: none;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #888;
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #fullscreen-btn:hover { border-color: #e94560; color: #eee; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header>
+    <h1>ROTATO</h1>
+    <p>Robot Controller — Asmbly Workshop 2026</p>
+    <button id="fullscreen-btn" title="Enter fullscreen">&#x26F6;</button>
+  </header>
+
+  <!-- ── Status Bar ───────────────────────────────────────────────────────── -->
+  <div id="status-bar">
+    <div class="status-item">
+      <div class="status-label">Battery</div>
+      <div id="battery-wrap">
+        <div id="battery-bar-bg"><div id="battery-bar"></div></div>
+        <div id="battery-pct">--%</div>
+      </div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">Safety</div>
+      <div id="safety-dot"></div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">WiFi</div>
+      <div id="conn-dot"></div>
+    </div>
+    <div class="status-item">
+      <div class="status-label">IP</div>
+      <div id="ip-text">...</div>
+    </div>
+  </div>
+
+  <!-- ── Joystick ─────────────────────────────────────────────────────────── -->
+  <div id="joystick-container">
+    <h2>Drive</h2>
+    <canvas id="joystick-canvas" width="240" height="240"></canvas>
+    <div id="drive-values">X: 0.00 &nbsp; Y: 0.00</div>
+  </div>
+
+  <!-- ── Weapon ───────────────────────────────────────────────────────────── -->
+  <div id="weapon-container">
+    <h2>Weapon Motor</h2>
+    <button id="weapon-btn">WEAPON<br>OFF</button>
+    <div id="safety-warning">⚠ Safety switch is blocking weapon</div>
+  </div>
+
+  <!-- ── Settings ─────────────────────────────────────────────────────────── -->
+  <button id="settings-btn">⚙ WiFi Settings</button>
+  <!-- ── Firmware version ────────────────────────────────────────────────────── -->
+  <div id="fw-version">fw —</div>
+  <!-- ── WiFi Modal ────────────────────────────────────────────────────────── -->
+  <div id="modal-overlay">
+    <div id="modal">
+      <h2>Connect to WiFi Network</h2>
+      <p>Enter your home WiFi credentials. The robot will reboot and try to connect.
+         If it fails, it will return to Access Point mode.</p>
+      <input type="text"     id="wifi-ssid" placeholder="WiFi Network Name (SSID)">
+      <input type="password" id="wifi-pass" placeholder="WiFi Password">
+      <div class="modal-buttons">
+        <button id="modal-cancel">Cancel</button>
+        <button id="modal-save">Save &amp; Reboot</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================================================
+    // Robot Controller Web UI
+    // ==========================================================================
+    //
+    // This script handles:
+    //  1. WebSocket connection to the robot (real-time, two-way communication)
+    //  2. Virtual joystick for driving (canvas + touch/mouse events)
+    //  3. Weapon button toggle
+    //  4. Status display (battery, safety switch, IP, connection state)
+    //  5. WiFi settings modal
+    //
+    // WEBSOCKET PROTOCOL:
+    //   Messages are JSON strings (text).
+    //   Send: {"type":"drive","x":0.5,"y":0.8}
+    //   Send: {"type":"weapon","active":true}
+    //   Send: {"type":"settings","ssid":"Net","pass":"pw"}
+    //   Receive: {"battery":85,"safety":true,"ip":"192.168.4.1","weapon":false}
+    // ==========================================================================
+
+    // ── WebSocket setup ────────────────────────────────────────────────────────
+    let ws = null;
+    let wsRetryTimer = null;
+
+    function connectWebSocket() {
+      // Connect to this page's host on the /ws path
+      const url = 'ws://' + window.location.host + '/ws';
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        console.log('[WS] Connected');
+        document.getElementById('conn-dot').classList.add('connected');
+      };
+
+      ws.onclose = () => {
+        console.log('[WS] Disconnected — retrying in 2s');
+        document.getElementById('conn-dot').classList.remove('connected');
+        ws = null;
+        // Auto-reconnect after 2 seconds
+        wsRetryTimer = setTimeout(connectWebSocket, 2000);
+      };
+
+      ws.onerror = (e) => {
+        console.error('[WS] Error:', e);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          updateStatus(data);
+        } catch(e) {
+          console.warn('[WS] Bad JSON:', event.data);
+        }
+      };
+    }
+
+    function sendJSON(obj) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(obj));
+      }
+    }
+
+    // ── Status display ─────────────────────────────────────────────────────────
+    function updateStatus(data) {
+      // Battery bar
+      const pct = data.battery ?? 0;
+      const bar = document.getElementById('battery-bar');
+      bar.style.width = pct + '%';
+      // Color: green > 40%, yellow > 20%, red <= 20%
+      bar.style.background = pct > 40 ? '#4caf50' : pct > 20 ? '#ffc107' : '#e94560';
+      document.getElementById('battery-pct').textContent = pct + '%';
+
+      // Safety indicator
+      const safetyDot = document.getElementById('safety-dot');
+      const isSafe = data.safety ?? true;
+      safetyDot.classList.toggle('unsafe', !isSafe);
+      safetyDot.title = isSafe ? 'Weapon allowed' : 'Safety switch blocking weapon';
+
+      // Safety warning text on weapon panel
+      document.getElementById('safety-warning').style.display = isSafe ? 'none' : 'block';
+      document.getElementById('weapon-btn').disabled = !isSafe;
+
+      // IP address
+      document.getElementById('ip-text').textContent = data.ip ?? '...';
+
+      // Firmware version (sent once per status packet)
+      if (data.fw) document.getElementById('fw-version').textContent = 'fw ' + data.fw;
+
+      // Sync weapon button state with robot (in case another client changed it)
+      if (typeof data.weapon !== 'undefined') {
+        weaponActive = data.weapon;
+        updateWeaponButton();
+      }
+    }
+
+    // ── Joystick ───────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('joystick-canvas');
+    const ctx    = canvas.getContext('2d');
+    const CX     = canvas.width  / 2;  // Center X
+    const CY     = canvas.height / 2;  // Center Y
+    const RADIUS = canvas.width  / 2 - 20;  // Outer circle radius
+    const KNOB_R = 30;  // Thumb knob radius
+
+    let joystickActive = false;
+    let knobX = CX, knobY = CY;  // Current knob position (pixels)
+    let driveX = 0, driveY = 0;  // Normalized values (-1.0 to 1.0)
+    let sendTimer = null;         // Throttle: only send every 50ms
+
+    function drawJoystick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Outer boundary circle
+      ctx.beginPath();
+      ctx.arc(CX, CY, RADIUS, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e94560';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Cross-hair guide lines
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(CX, CY - RADIUS); ctx.lineTo(CX, CY + RADIUS); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(CX - RADIUS, CY); ctx.lineTo(CX + RADIUS, CY); ctx.stroke();
+
+      // Knob shadow
+      ctx.beginPath();
+      ctx.arc(knobX, knobY, KNOB_R + 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(233,69,96,0.2)';
+      ctx.fill();
+
+      // Knob fill
+      ctx.beginPath();
+      ctx.arc(knobX, knobY, KNOB_R, 0, Math.PI * 2);
+      const gradient = ctx.createRadialGradient(knobX - 5, knobY - 5, 2, knobX, knobY, KNOB_R);
+      gradient.addColorStop(0, '#ff6b81');
+      gradient.addColorStop(1, '#e94560');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+
+    function getCanvasPos(e) {
+      // Get touch/mouse position relative to canvas center
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top)  * scaleY
+      };
+    }
+
+    function updateKnob(pos) {
+      // Compute offset from center
+      const dx = pos.x - CX;
+      const dy = pos.y - CY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Clamp knob to within the outer circle
+      if (dist > RADIUS) {
+        knobX = CX + (dx / dist) * RADIUS;
+        knobY = CY + (dy / dist) * RADIUS;
+      } else {
+        knobX = pos.x;
+        knobY = pos.y;
+      }
+
+      // Normalize to -1.0 ... +1.0
+      driveX =  (knobX - CX) / RADIUS;
+      driveY = -(knobY - CY) / RADIUS;  // Invert Y: up = positive
+
+      document.getElementById('drive-values').textContent =
+        'X: ' + driveX.toFixed(2) + '   Y: ' + driveY.toFixed(2);
+
+      drawJoystick();
+    }
+
+    function releaseJoystick() {
+      joystickActive = false;
+      knobX = CX; knobY = CY;
+      driveX = 0; driveY = 0;
+      document.getElementById('drive-values').textContent = 'X: 0.00   Y: 0.00';
+      drawJoystick();
+      sendJSON({ type: 'drive', x: 0, y: 0 });
+      if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
+    }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', e => {
+      joystickActive = true;
+      updateKnob(getCanvasPos(e));
+      sendTimer = setInterval(() => {
+        sendJSON({ type: 'drive', x: Math.round(driveX * 100) / 100, y: Math.round(driveY * 100) / 100 });
+      }, 50);
+    });
+    canvas.addEventListener('mousemove', e => { if (joystickActive) updateKnob(getCanvasPos(e)); });
+    canvas.addEventListener('mouseup',   () => releaseJoystick());
+    canvas.addEventListener('mouseleave', () => { if (joystickActive) releaseJoystick(); });
+
+    // Touch events
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      joystickActive = true;
+      updateKnob(getCanvasPos(e));
+      sendTimer = setInterval(() => {
+        sendJSON({ type: 'drive', x: Math.round(driveX * 100) / 100, y: Math.round(driveY * 100) / 100 });
+      }, 50);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); if (joystickActive) updateKnob(getCanvasPos(e)); }, { passive: false });
+    canvas.addEventListener('touchend',  e => { e.preventDefault(); releaseJoystick(); }, { passive: false });
+
+    // Initial render
+    drawJoystick();
+
+    // ── Weapon button ──────────────────────────────────────────────────────────
+    let weaponActive = false;
+
+    function updateWeaponButton() {
+      const btn = document.getElementById('weapon-btn');
+      btn.classList.toggle('active', weaponActive);
+      btn.innerHTML = weaponActive ? 'WEAPON<br>ON' : 'WEAPON<br>OFF';
+    }
+
+    document.getElementById('weapon-btn').addEventListener('pointerdown', e => {
+      e.preventDefault();  // fire immediately, suppress follow-on click event
+      if (e.currentTarget.disabled) return;
+      weaponActive = !weaponActive;
+      updateWeaponButton();
+      sendJSON({ type: 'weapon', active: weaponActive });
+    });
+
+    // ── WiFi settings modal ────────────────────────────────────────────────────
+    const modal   = document.getElementById('modal-overlay');
+    const ssidIn  = document.getElementById('wifi-ssid');
+    const passIn  = document.getElementById('wifi-pass');
+
+    document.getElementById('settings-btn').addEventListener('click', () => {
+      modal.classList.add('open');
+      ssidIn.focus();
+    });
+
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+      modal.classList.remove('open');
+      ssidIn.value = '';
+      passIn.value = '';
+    });
+
+    document.getElementById('modal-save').addEventListener('click', () => {
+      const ssid = ssidIn.value.trim();
+      const pass = passIn.value;
+      if (!ssid) { ssidIn.focus(); return; }
+      if (confirm('Save WiFi settings and reboot the robot?')) {
+        sendJSON({ type: 'settings', ssid, pass });
+        modal.classList.remove('open');
+      }
+    });
+
+    // Close modal on overlay click
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+
+    // ── Fullscreen ─────────────────────────────────────────────────────────────
+    const fsBtn = document.getElementById('fullscreen-btn');
+    function requestFS() {
+      const el = document.documentElement;
+      if (el.requestFullscreen)            el.requestFullscreen({ navigationUI: 'hide' });
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }
+    function exitFS() {
+      if (document.exitFullscreen)            document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+    function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+    function syncFsBtn() {
+      fsBtn.innerHTML = isFS() ? '&#x22A1;' : '&#x26F6;';
+      fsBtn.title     = isFS() ? 'Exit fullscreen' : 'Enter fullscreen';
+    }
+    fsBtn.addEventListener('pointerdown', e => { e.preventDefault(); isFS() ? exitFS() : requestFS(); });
+    document.addEventListener('fullscreenchange',       syncFsBtn);
+    document.addEventListener('webkitfullscreenchange', syncFsBtn);
+
+    // ── Start connection ───────────────────────────────────────────────────────
+    connectWebSocket();
+  </script>
+</body>
+</html>
