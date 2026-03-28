@@ -10,15 +10,15 @@ void SafetySwitch::begin() {
     // Configure as input with internal pull-up resistor.
     // When switch is OPEN: pin reads HIGH (safe = true, weapon allowed)
     // When switch is CLOSED to GND: pin reads LOW (safe = false, weapon blocked)
-    pinMode(PIN_GPIO7_SHARED, INPUT_PULLUP);
-    _lastRaw      = (digitalRead(PIN_GPIO7_SHARED) == HIGH);
+    pinMode(PIN_SAFETY_SWITCH, INPUT_PULLUP);
+    _lastRaw      = (digitalRead(PIN_SAFETY_SWITCH) == HIGH);
     _safeState    = _lastRaw;
     _lastChange_ms = millis();
     Serial.printf("[Safety] Initialized. State: %s\n", _safeState ? "SAFE" : "BLOCKED");
 }
 
 void SafetySwitch::update() {
-    bool raw = (digitalRead(PIN_GPIO7_SHARED) == HIGH);
+    bool raw = (digitalRead(PIN_SAFETY_SWITCH) == HIGH);
 
     if (raw != _lastRaw) {
         // State changed — start the debounce timer

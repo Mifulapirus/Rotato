@@ -11,7 +11,7 @@
 // Frequency 0 = silence (pause between beeps).
 
 static const BeepStep SEQ_STARTUP[] = {
-    {880, 100}, {0, 50}, {1174, 100}, {0, 50}, {1568, 200}
+    {1568, 100}, {0, 50}, {1174, 100}, {0, 50}, {880, 200}
 };
 
 static const BeepStep SEQ_ARMED[] = {
@@ -19,7 +19,8 @@ static const BeepStep SEQ_ARMED[] = {
 };
 
 static const BeepStep SEQ_WEAPON_ON[] = {
-    {523, 60}, {659, 60}, {784, 120}
+    //{523, 60}, {659, 60}, {784, 120}
+    {523, 60}, {784, 120}
 };
 
 static const BeepStep SEQ_WEAPON_OFF[] = {
@@ -34,7 +35,7 @@ static const BeepStep SEQ_ERROR[] = {
 
 void BuzzerController::begin() {
     ledcSetup(LEDC_CH_BUZZER, 1000, 8);  // 8-bit resolution for tone (0-255)
-    ledcAttachPin(PIN_GPIO7_SHARED, LEDC_CH_BUZZER);
+    ledcAttachPin(PIN_BUZZER, LEDC_CH_BUZZER);
     toneOff();
     Serial.println("[Buzzer] Initialized.");
 }

@@ -17,6 +17,7 @@
 //   Drive:   {"type":"drive","x":0.5,"y":0.8}
 //   Weapon:  {"type":"weapon","active":true}
 //   WiFi:    {"type":"settings","ssid":"MyNetwork","pass":"password123"}
+//   Forget:  {"type":"forget"}
 //
 // JSON PROTOCOL (Robot → Browser, every 500ms):
 //   {"battery":85,"safety":true,"ip":"192.168.4.1","weapon":false,"fw":"1.0.0+42"}
@@ -35,9 +36,14 @@
 
 // ── Callback function types ────────────────────────────────────────────────
 // These are function pointer types used to notify main.cpp when a command arrives.
-using DriveCallback   = std::function<void(float x, float y)>;
-using WeaponCallback  = std::function<void(bool active)>;
-using SettingsCallback = std::function<void(const String& ssid, const String& pass)>;
+using DriveCallback       = std::function<void(float x, float y)>;
+using WeaponCallback      = std::function<void(bool active)>;
+using SettingsCallback    = std::function<void(const String& ssid, const String& pass)>;
+using ForgetCallback      = std::function<void()>;
+using BleEnableCallback   = std::function<void(bool enabled)>;
+using PwmRangeCallback    = std::function<void(uint16_t halfRangeUs)>;
+using RenameCallback      = std::function<void(const String& name)>;
+using ApPasswordCallback  = std::function<void(const String& pass)>;
 
 class WebServerManager {
 public:
@@ -49,14 +55,20 @@ public:
 
     // Register callback functions for robot commands.
     // Call these before begin() to wire up the hardware.
-    void onDrive(DriveCallback cb)      { _driveCallback = cb; }
-    void onWeapon(WeaponCallback cb)    { _weaponCallback = cb; }
-    void onSettings(SettingsCallback cb) { _settingsCallback = cb; }
+    void onDrive(DriveCallback cb)             { _driveCallback = cb; }
+    void onWeapon(WeaponCallback cb)           { _weaponCallback = cb; }
+    void onSettings(SettingsCallback cb)       { _settingsCallback = cb; }
+    void onForget(ForgetCallback cb)           { _forgetCallback = cb; }
+    void onBleEnable(BleEnableCallback cb)     { _bleEnableCallback = cb; }
+    void onPwmRange(PwmRangeCallback cb)       { _pwmRangeCallback = cb; }
+    void onRename(RenameCallback cb)           { _renameCallback = cb; }
+    void onApPassword(ApPasswordCallback cb)   { _apPasswordCallback = cb; }
 
     // Send a status JSON to all connected browser clients.
     // Call this periodically from loop() — e.g. every 500ms.
     void broadcastStatus(uint8_t batteryPercent, bool safetyOk,
-                         const String& ipAddress, bool weaponActive);
+                         const String& ipAddress, bool weaponActive,
+                         const String& robotName);
 
     // WebSocket cleanup — must be called from loop()
     void update();
@@ -65,9 +77,14 @@ private:
     AsyncWebServer _server;
     AsyncWebSocket _ws;
 
-    DriveCallback    _driveCallback;
-    WeaponCallback   _weaponCallback;
-    SettingsCallback _settingsCallback;
+    DriveCallback       _driveCallback;
+    WeaponCallback      _weaponCallback;
+    SettingsCallback    _settingsCallback;
+    ForgetCallback      _forgetCallback;
+    BleEnableCallback   _bleEnableCallback;
+    PwmRangeCallback    _pwmRangeCallback;
+    RenameCallback      _renameCallback;
+    ApPasswordCallback  _apPasswordCallback;
 
     // Handle incoming WebSocket messages
     void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);

@@ -61,7 +61,7 @@ header = """\
 #define FW_BUILD_NUMBER    {build}
 #define FW_BUILD_DATE      "{date}"
 #define FW_BUILD_TIME      "{time}"
-#define FW_VERSION_FULL    "{major}.{minor}.{patch}+{build}"
+#define FW_VERSION_FULL    "{major}.{minor}.{patch}.{build}"
 """.format(
     major=major,
     minor=minor,
@@ -76,7 +76,7 @@ with open(out_path, "w") as f:
     f.write(header)
 
 print(
-    "\n[version] Rotato firmware  v{}.{}.{}+{}  (built {} {})\n".format(
+    "\n[version] Rotato firmware  v{}.{}.{}.{}  (built {} {})\n".format(
         major, minor, patch, build,
         now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S"),
     )

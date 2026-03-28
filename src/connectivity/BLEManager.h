@@ -1,42 +1,27 @@
 #pragma once
 // =============================================================================
-// BLEManager.h — Bluetooth Low Energy (Stub for Future Android App)
+// BLEManager.h — Bluetooth Low Energy GATT Server (Android app transport)
 // =============================================================================
 //
-// This is a STUB — a placeholder that doesn't do anything yet.
-// It's here so the architecture is ready for BLE when you want to add it.
+// Runs a BLE GATT server so the Android app can control the robot without WiFi.
 //
-// WHAT IS BLE?
-//   Bluetooth Low Energy (BLE) is a wireless protocol for low-power devices.
-//   Unlike classic Bluetooth, BLE uses a "GATT" (Generic Attribute Profile)
-//   structure to organize data.
-//
-// GATT CONCEPTS (for Android app development later):
-//   - SERVICE: A group of related data (like "Robot Control Service")
-//   - CHARACTERISTIC: A single piece of data within a service
-//     (like "left motor speed" or "battery level")
-//   - CLIENT: The Android phone that connects to the robot
-//   - SERVER: The ESP32 that advertises data
-//
-// PLANNED CHARACTERISTICS:
-//   UUID: 4 hex groups, e.g. "12345678-1234-1234-1234-123456789abc"
-//
+// GATT PROFILE:
 //   Service:  ROBOT_SERVICE_UUID
-//     char: DRIVE_X_UUID       — float, write (joystick X axis)
-//     char: DRIVE_Y_UUID       — float, write (joystick Y axis)
-//     char: WEAPON_UUID        — bool,  write (weapon on/off)
-//     char: STATUS_UUID        — string, notify (battery%, safety, IP)
+//     DRIVE_X  — WRITE_NR  4-byte little-endian float  [-1.0 … +1.0]  joystick X
+//     DRIVE_Y  — WRITE_NR  4-byte little-endian float  [-1.0 … +1.0]  joystick Y
+//     WEAPON   — WRITE_NR  1-byte uint8  0x00=off / 0x01=on
+//     STATUS   — NOTIFY    UTF-8 JSON {"battery":85,"safety":true,"weapon":false,"fw":"1.0.0+1"}
 //
-// TO ENABLE:
-//   1. Uncomment #define BLE_ENABLED in config.h
-//   2. Fill in the method bodies below using the NimBLE-Arduino library
-//   3. Call bleManager.begin() and bleManager.update() from main.cpp
+// ENABLE:
+//   #define BLE_ENABLED in config.h  (already on by default)
 //
-// NOTES FOR ANDROID DEVELOPMENT:
-//   - Use Android's BluetoothLeScanner to find the robot by service UUID
-//   - Connect and discover the service/characteristics
-//   - Write float bytes to DRIVE_X and DRIVE_Y characteristics
-//   - Subscribe to STATUS_UUID notifications for live battery/status updates
+// USAGE (main.cpp):
+//   ble.begin(wifi.getSSID());   // advertise as "Rotato-XXXX"
+//   ble.onDrive([](float x, float y){ ... });
+//   ble.onWeapon([](bool active){ ... });
+//   // loop():
+//   ble.sendStatus(battery%, safety, weapon);
+//   ble.update();  // light housekeeping
 // =============================================================================
 
 #include <Arduino.h>
@@ -45,9 +30,13 @@
 #ifdef BLE_ENABLED
 #include <NimBLEDevice.h>
 
+// Forward declarations — implementations live in BLEManager.cpp.
+// Declared here so BLEManager can grant them friend access.
+class RobotServerCB;
+class RobotCharCB;
+
 // ── GATT UUIDs ──────────────────────────────────────────────────────────────
-// These unique IDs identify the robot's BLE service and characteristics.
-// The Android app will use these same UUIDs to find and talk to the robot.
+// The Android app must use these same UUIDs to discover and talk to the robot.
 #define ROBOT_SERVICE_UUID  "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 #define DRIVE_X_UUID        "a1b2c3d4-e5f6-7890-abcd-ef1234567891"
 #define DRIVE_Y_UUID        "a1b2c3d4-e5f6-7890-abcd-ef1234567892"
@@ -58,35 +47,55 @@
 
 class BLEManager {
 public:
-    // Initialize BLE device, create service and characteristics.
-    // Start advertising so Android phones can discover the robot.
-    void begin();
+    // Start BLE advertising.  deviceName should match the WiFi SSID ("Rotato-XXXX").
+    void begin(const String& deviceName = "Rotato");
 
-    // Check for incoming BLE commands and send status notifications.
-    // Call from loop().
+    // Housekeeping — call from loop() (currently a no-op; NimBLE is event-driven).
     void update();
 
-    // Returns true if an Android device is currently connected via BLE.
+    // Enable or disable BLE command acceptance at runtime (no reboot needed).
+    // When disabled: BLE drive/weapon commands are ignored and motion is zeroed.
+    void setEnabled(bool enabled);
+
+    // Update the BLE advertising / scan-response device name at runtime.
+    // Stops advertising, swaps the name, then restarts.  No reboot needed.
+    void setDeviceName(const String& name);
+
+    // Returns true when an Android device is connected.
     bool isConnected() const;
 
-    // Register callbacks (same pattern as WebServerManager)
+    // Register callbacks — same pattern as WebServerManager.
     using DriveCallback  = std::function<void(float x, float y)>;
     using WeaponCallback = std::function<void(bool active)>;
     void onDrive(DriveCallback cb)   { _driveCallback = cb; }
     void onWeapon(WeaponCallback cb) { _weaponCallback = cb; }
 
-    // Send status update to connected BLE client (battery%, safety, weapon state)
+    // Notify the connected Android client with the current robot status.
+    // Called from main.cpp every WS_STATUS_INTERVAL_MS.
     void sendStatus(uint8_t batteryPercent, bool safetyOk, bool weaponActive);
 
+    // ── Called by BLE characteristic callbacks (not for external use) ────────
+    // Prefixed with _ to signal these are internal bridge methods.
+    void _onDriveWrite(float x, float y);
+    void _onWeaponWrite(bool active);
+
 private:
+    bool           _enabled = true;   // runtime BLE enable/disable switch
     DriveCallback  _driveCallback;
     WeaponCallback _weaponCallback;
 
+    // Last known drive values — cached so both axes fire the callback together.
+    float _driveX = 0.0f;
+    float _driveY = 0.0f;
+
 #ifdef BLE_ENABLED
-    NimBLEServer*         _server         = nullptr;
-    NimBLECharacteristic* _driveXChar     = nullptr;
-    NimBLECharacteristic* _driveYChar     = nullptr;
-    NimBLECharacteristic* _weaponChar     = nullptr;
-    NimBLECharacteristic* _statusChar     = nullptr;
+    friend class RobotServerCB;  // needs _driveCallback on disconnect
+    friend class RobotCharCB;    // needs _driveXChar/_driveYChar/_weaponChar and cached axes
+
+    NimBLEServer*         _server     = nullptr;
+    NimBLECharacteristic* _driveXChar = nullptr;
+    NimBLECharacteristic* _driveYChar = nullptr;
+    NimBLECharacteristic* _weaponChar = nullptr;
+    NimBLECharacteristic* _statusChar = nullptr;
 #endif
 };

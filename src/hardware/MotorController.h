@@ -50,8 +50,18 @@ public:
     // Returns true if weapon motor is currently active
     bool isWeaponActive() const { return _weaponActive; }
 
+    // Set the drive pulse-width half-range (µs from neutral 1500).
+    // Default = PWM_DRIVE_HALF_RANGE_US (500 = standard 1000–2000 µs window).
+    // Range is clamped to [200, 950] to stay safely inside most ESC windows.
+    // Call this from the settings panel "Servo Range" control.
+    void setDriveRange(uint16_t halfRangeUs);
+
+    // Return current half-range setting
+    uint16_t getDriveRange() const { return _halfRangeUs; }
+
 private:
-    bool _weaponActive = false;
+    bool     _weaponActive = false;
+    uint16_t _halfRangeUs  = PWM_DRIVE_HALF_RANGE_US;  // runtime-adjustable drive range
 
     // Convert a speed value (-1.0 to +1.0) to a PWM duty cycle (0–65535).
     // Optionally reverses direction if the motor is mounted mirrored.

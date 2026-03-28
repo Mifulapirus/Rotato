@@ -4,10 +4,12 @@
 
 #include "WiFiManager.h"
 
-// NVS namespace and keys for storing WiFi credentials
-static const char* NVS_NAMESPACE = "robot_wifi";
-static const char* NVS_KEY_SSID  = "ssid";
-static const char* NVS_KEY_PASS  = "pass";
+// NVS namespace and keys for storing WiFi credentials + robot identity
+static const char* NVS_NAMESPACE    = "robot_wifi";
+static const char* NVS_KEY_SSID     = "ssid";
+static const char* NVS_KEY_PASS     = "pass";
+static const char* NVS_KEY_NAME     = "name";
+static const char* NVS_KEY_AP_PASS  = "ap_pass";
 
 void WiFiManager::begin() {
     // Disable saving WiFi config to flash — prevents stale state from
@@ -21,8 +23,17 @@ void WiFiManager::begin() {
     // We briefly bring radio up just to read MAC, then let begin() set the real mode
     WiFi.mode(WIFI_AP);      // AP mode so macAddress() is reliable on C3
     delay(100);
-    _apSSID = buildSSID();
-    Serial.printf("[WiFi] Robot name: %s\n", _apSSID.c_str());
+    _defaultName = buildSSID();  // hardware-derived "Rotato-XXXX", invariant
+
+    // Load custom name + AP password from NVS (fall back to defaults if not set)
+    _prefs.begin(NVS_NAMESPACE, true);
+    String customName = _prefs.getString(NVS_KEY_NAME, "");
+    _apPassword = _prefs.getString(NVS_KEY_AP_PASS, AP_PASSWORD);
+    _prefs.end();
+
+    _apSSID = customName.isEmpty() ? _defaultName : customName;
+    Serial.printf("[WiFi] Robot name  : %s (default: %s)\n", _apSSID.c_str(), _defaultName.c_str());
+    Serial.printf("[WiFi] AP password : %s\n", _apPassword.c_str());
 
     // Try station mode first if we have saved credentials
     if (connectToSavedNetwork()) {
@@ -97,7 +108,7 @@ void WiFiManager::startAccessPoint() {
     WiFi.mode(WIFI_AP);
     delay(100);  // Let the radio settle after mode switch
 
-    bool ok = WiFi.softAP(_apSSID.c_str(), AP_PASSWORD);
+    bool ok = WiFi.softAP(_apSSID.c_str(), _apPassword.c_str());
     delay(500);  // Allow AP to fully initialize before reading config
 
     if (!ok) {
@@ -110,12 +121,60 @@ void WiFiManager::startAccessPoint() {
     IPAddress apIP = WiFi.softAPIP();
     Serial.println("[WiFi] ────────────────────────────────────────");
     Serial.printf( "[WiFi]  AP SSID     : %s\n", _apSSID.c_str());
-    Serial.printf( "[WiFi]  AP Password : %s\n", AP_PASSWORD);
+    Serial.printf( "[WiFi]  AP Password : %s\n", _apPassword.c_str());
     Serial.printf( "[WiFi]  AP IP       : %s\n", apIP.toString().c_str());
     Serial.printf( "[WiFi]  Channel     : %d\n", WiFi.channel());
     Serial.printf( "[WiFi]  MAC (AP)    : %s\n", WiFi.softAPmacAddress().c_str());
+    Serial.printf( "[WiFi]  TX Power    : %.2f dBm\n", WiFi.getTxPower() * 0.25f);
     Serial.println("[WiFi] ────────────────────────────────────────");
     Serial.println("[WiFi] Open a browser and go to: http://" + apIP.toString());
+}
+
+// ── Robot identity ─────────────────────────────────────────────────────────────
+
+bool WiFiManager::saveRobotName(const String& name) {
+    // Validate: not empty, not too long, not reserved "Rotato-XXXX" pattern
+    if (name.isEmpty() || name.length() > 32) return false;
+    if (name.length() == 11 && name.startsWith("Rotato-")) {
+        bool hexOk = true;
+        for (uint8_t i = 7; i < 11; i++) {
+            if (!isxdigit((unsigned char)name[i])) { hexOk = false; break; }
+        }
+        if (hexOk) {
+            Serial.println("[WiFi] saveRobotName: rejected reserved default-format name.");
+            return false;
+        }
+    }
+    _prefs.begin(NVS_NAMESPACE, false);
+    _prefs.putString(NVS_KEY_NAME, name);
+    _prefs.end();
+    Serial.printf("[WiFi] Robot name saved: %s. Rebooting...\n", name.c_str());
+    delay(500);
+    ESP.restart();
+    return true;  // unreachable but satisfies compiler
+}
+
+void WiFiManager::clearRobotName() {
+    _prefs.begin(NVS_NAMESPACE, false);
+    _prefs.remove(NVS_KEY_NAME);
+    _prefs.end();
+    Serial.println("[WiFi] Robot name cleared. Rebooting...");
+    delay(500);
+    ESP.restart();
+}
+
+bool WiFiManager::saveApPassword(const String& pass) {
+    if (pass.length() < 8 || pass.length() > 63) {
+        Serial.println("[WiFi] saveApPassword: password must be 8-63 characters.");
+        return false;
+    }
+    _prefs.begin(NVS_NAMESPACE, false);
+    _prefs.putString(NVS_KEY_AP_PASS, pass);
+    _prefs.end();
+    Serial.printf("[WiFi] AP password saved. Rebooting...\n");
+    delay(500);
+    ESP.restart();
+    return true;
 }
 
 String WiFiManager::buildSSID() {

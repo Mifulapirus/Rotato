@@ -47,7 +47,8 @@ void WebServerManager::begin() {
 }
 
 void WebServerManager::broadcastStatus(uint8_t batteryPercent, bool safetyOk,
-                                       const String& ipAddress, bool weaponActive) {
+                                       const String& ipAddress, bool weaponActive,
+                                       const String& robotName) {
     if (_ws.count() == 0) return;  // No clients — skip
 
     // Build JSON status message
@@ -57,6 +58,7 @@ void WebServerManager::broadcastStatus(uint8_t batteryPercent, bool safetyOk,
     doc["ip"]      = ipAddress;
     doc["weapon"]  = weaponActive;
     doc["fw"]      = FW_VERSION_FULL;
+    doc["name"]    = robotName;
 
     String json;
     serializeJson(doc, json);
@@ -134,5 +136,51 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
                 _settingsCallback(ssid, pass);
             }
         }
-    }
+        // ── Forget command: {"type":"forget"} ──────────────────────────────────
+        else if (strcmp(type, "forget") == 0) {
+            Serial.println("[Web] Forget WiFi command received from browser.");
+            if (_forgetCallback) _forgetCallback();
+        }
+        // ── BLE enable/disable: {"type":"ble_enable","enabled":true} ─────────────
+        else if (strcmp(type, "ble_enable") == 0) {
+            bool enabled = doc["enabled"] | true;
+            Serial.printf("[Web] BLE %s by settings panel.\n", enabled ? "enabled" : "disabled");
+            if (_bleEnableCallback) _bleEnableCallback(enabled);
+        }
+        // ── PWM range: {"type":"pwm_range","us":600} ───────────────────────────
+        else if (strcmp(type, "pwm_range") == 0) {
+            uint16_t us = (uint16_t)(doc["us"] | PWM_DRIVE_HALF_RANGE_US);
+            Serial.printf("[Web] PWM range set to ±%u µs by settings panel.\n", us);
+            if (_pwmRangeCallback) _pwmRangeCallback(us);
+        }        // ── Rename: {"type":"rename","name":"MyRobot"} ("" = reset to default) ──
+        else if (strcmp(type, "rename") == 0) {
+            String name = doc["name"] | "";
+            if (!name.isEmpty()) {
+                // Block reserved "Rotato-XXXX" pattern (firmware-side guard)
+                bool reserved = false;
+                if (name.length() == 11 && name.startsWith("Rotato-")) {
+                    bool hexOk = true;
+                    for (uint8_t i = 7; i < 11; i++) {
+                        if (!isxdigit((unsigned char)name[i])) { hexOk = false; break; }
+                    }
+                    reserved = hexOk;
+                }
+                if (reserved) {
+                    Serial.println("[Web] Rename rejected: reserved default-format name.");
+                    return;
+                }
+            }
+            Serial.printf("[Web] Rename request: \"%s\"\n", name.c_str());
+            if (_renameCallback) _renameCallback(name);  // "" = clear custom name
+        }
+        // ── AP password: {"type":"ap_password","pass":"newpass"} ─────────────
+        else if (strcmp(type, "ap_password") == 0) {
+            String pass = doc["pass"] | "";
+            if (pass.length() < 8 || pass.length() > 63) {
+                Serial.println("[Web] AP password rejected: must be 8-63 chars.");
+                return;
+            }
+            Serial.println("[Web] AP password change requested.");
+            if (_apPasswordCallback) _apPasswordCallback(pass);
+        }    }
 }

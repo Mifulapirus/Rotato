@@ -40,8 +40,31 @@ public:
     // Save new WiFi credentials to NVS and reboot into STA mode.
     void saveCredentials(const String& ssid, const String& password);
 
-    // Clear saved credentials and restart in AP mode.
+    // Clear saved credentials AND custom robot name/AP password, return to defaults.
     void clearCredentials();
+
+    // ── Robot identity ───────────────────────────────────────────────────────
+    // Save a custom robot name to NVS. Reboots to apply (SSID + BLE advert change).
+    // Name must NOT match "Rotato-XXXX" (4 hex chars) — those are reserved defaults.
+    // Returns false and does NOT reboot if the name is forbidden or too short.
+    bool saveRobotName(const String& name);
+
+    // Reset the robot name to the hardware default ("Rotato-XXXX") and reboot.
+    void clearRobotName();
+
+    // Returns the hardware-derived default name ("Rotato-XXXX") — never custom.
+    String getDefaultName() const { return _defaultName; }
+
+    // Returns the current active robot name (custom override, or hardware default).
+    String getRobotName() const { return _apSSID; }
+
+    // ── AP password ──────────────────────────────────────────────────────────
+    // Change the Access Point password stored in NVS. Reboots to apply.
+    // Pass must be >= 8 characters (WPA2 minimum).
+    bool saveApPassword(const String& pass);
+
+    // Returns the currently active AP password (custom or compiled-in default).
+    String getApPassword() const { return _apPassword; }
 
     // Returns the current WiFi mode (ACCESS_POINT or STATION)
     RobotWiFiMode getMode() const { return _mode; }
@@ -54,8 +77,10 @@ public:
 
 private:
     RobotWiFiMode _mode = RobotWiFiMode::ACCESS_POINT;
-    String      _apSSID;
-    Preferences _prefs;  // NVS storage handle
+    String      _apSSID;       // active SSID (custom name or default)
+    String      _defaultName;  // hardware-derived "Rotato-XXXX", never changes
+    String      _apPassword;   // active AP password (custom or AP_PASSWORD)
+    Preferences _prefs;        // NVS storage handle
 
     // Try to connect to saved WiFi network. Returns true if successful.
     bool connectToSavedNetwork();

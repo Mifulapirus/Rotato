@@ -9,23 +9,23 @@
 //
 // HOW TO USE:
 //   - Change GPIO numbers if you wire things differently
-//   - Uncomment HAS_BUZZER or HAS_SAFETY_SWITCH depending on JP1 solder jumper
+//   - Buzzer is always on GPIO7 via JP1. If JP1 is unsoldered, GPIO7 is free expansion.
+//   - Safety switch is on GPIO5 (J8) — independent of the buzzer jumper.
 //   - Change AP_SSID / AP_PASSWORD for your robot's WiFi name
 // =============================================================================
 
 // ── Feature Flags ─────────────────────────────────────────────────────────────
 //
-// GPIO7 is SHARED between the Buzzer (via solder jumper JP1) and the J10
-// safety switch. You can only enable ONE at a time based on your hardware.
-//
-//   JP1 soldered   → #define HAS_BUZZER       (buzzer works, J10 ignored)
-//   JP1 unsoldered → #define HAS_SAFETY_SWITCH (J10 works, no buzzer sound)
+// HAS_BUZZER        — enable if JP1 solder jumper is closed (GPIO7 → buzzer).
+//                     If JP1 is open, GPIO7 is unused (expansion J9 area).
+// HAS_SAFETY_SWITCH — enable if a kill-switch is wired to J8 (GPIO5).
+//                     Both flags are independent and can be set at the same time.
 //
 #define HAS_BUZZER
-// #define HAS_SAFETY_SWITCH
+#define HAS_SAFETY_SWITCH
 
-// Enable/disable BLE (stub only — for future Android app development)
-// #define BLE_ENABLED
+// Enable/disable BLE (NimBLE-Arduino — connects the Android app to the robot)
+#define BLE_ENABLED
 
 // ── Pin Definitions ──────────────────────────────────────────────────────────
 //
@@ -35,9 +35,10 @@
 #define PIN_MOTOR_LEFT    1   // GPIO1  — J5: Left wheel ESC signal
 #define PIN_MOTOR_RIGHT   3   // GPIO3  — J6: Right wheel ESC signal
 #define PIN_MOTOR_WEAPON  4   // GPIO4  — J7: Weapon motor ESC signal
-#define PIN_EXPANSION_1   5   // GPIO5  — J8: Open/expansion (unused)
-#define PIN_EXPANSION_2   6   // GPIO6  — J9: Open/expansion (unused)
-#define PIN_GPIO7_SHARED  7   // GPIO7  — Buzzer (JP1) OR J10 safety switch
+#define PIN_SAFETY_SWITCH 5   // GPIO5  — J8: Weapon kill-switch (active LOW, INPUT_PULLUP)
+#define PIN_EXPANSION_1   6   // GPIO6  — J9: Open/expansion (unused)
+#define PIN_BUZZER        7   // GPIO7  — Buzzer via JP1. If JP1 open: unused expansion.
+#define PIN_BOOT_BUTTON   9   // GPIO9  — Built-in BOOT button (active LOW, hold 3s to clear WiFi)
 
 // ── PWM / RC Servo Timing ─────────────────────────────────────────────────────
 //
@@ -45,17 +46,36 @@
 //   1000µs = full reverse  |  1500µs = stop/neutral  |  2000µs = full forward
 //
 // The ESP32 LEDC peripheral generates these pulses.
-// Timer resolution is 16-bit: values 0–65535 represent 0–20ms (one full period).
-//   Duty formula: duty = (pulse_us / 20000.0) * 65535
+// Timer resolution is 14-bit: values 0–16383 represent 0–20ms (one full period).
+// NOTE: ESP-IDF 4.4.x on ESP32-C3 caps LEDC resolution at 14 bits (max 16383).
+//   Duty formula: duty = (pulse_us / 20000.0) * ((1 << PWM_RESOLUTION_BITS) - 1)
 //
 #define PWM_FREQUENCY_HZ    50      // 50 Hz = 20ms period (standard RC protocol)
-#define PWM_RESOLUTION_BITS 16      // 16-bit resolution for smooth control
+#define PWM_RESOLUTION_BITS 14      // 14-bit resolution (ESP-IDF 4.4.x max for ESP32-C3)
 #define PWM_PERIOD_US       20000   // 20,000 µs = one full period
 #define PWM_NEUTRAL_US      1500    // Stop / neutral position
 #define PWM_MIN_US          1000    // Full reverse
 #define PWM_MAX_US          2000    // Full forward
 #define PWM_WEAPON_IDLE_US  1000    // Weapon off (minimum pulse = ESC disarmed)
 #define PWM_WEAPON_FULL_US  2000    // Weapon full speed
+
+// ── Drive pulse-width range (servo/ESC travel) ────────────────────────────────
+//
+// Standard ESCs respond to 1000–2000 µs (±500 µs from neutral 1500 µs).
+// Some ESCs and servos accept a wider window (e.g. 800–2200 µs = ±700 µs)
+// which gives more resolution and fuller travel.
+//
+// PWM_DRIVE_HALF_RANGE_US sets how far from neutral the drive signal swings:
+//   pulse = NEUTRAL ± HALF_RANGE   (clamped to PWM_MIN_US / PWM_MAX_US)
+//
+// This value can also be changed at runtime via the web settings panel
+// ("Servo Range" slider).  Increase if motors only move a small fraction of
+// their travel at full stick deflection.
+//
+// Safe starting range: 500 (standard).  Typical max: 700.  Hard limit: 950
+// (keeps pulse inside 550–2450 µs, well clear of most ESC arming windows).
+//
+#define PWM_DRIVE_HALF_RANGE_US  500   // ±µs from neutral (default = standard 1000–2000)
 
 // LEDC channels assigned to each motor (ESP32 has up to 8 channels)
 #define LEDC_CH_LEFT_MOTOR    0
@@ -93,7 +113,7 @@
 // automatically, so multiple robots in the same room won't conflict.
 //
 #define AP_SSID_PREFIX    "Rotato-"   // Final SSID will be e.g. "Rotato-A3F2"
-#define AP_PASSWORD       "roboto2026"  // Minimum 8 characters for WPA2
+#define AP_PASSWORD       "rotato2026"  // Minimum 8 characters for WPA2
 #define AP_IP_ADDRESS     "192.168.4.1" // Default ESP32 AP gateway address
 #define STA_CONNECT_TIMEOUT_MS 10000   // 10 seconds to try connecting to home WiFi
 

@@ -7,9 +7,9 @@
 // ── Private helpers ──────────────────────────────────────────────────────────
 
 uint32_t MotorController::usToDuty(uint32_t pulse_us) {
-    // Convert pulse width (µs) to 16-bit duty cycle for the LEDC peripheral.
+    // Convert pulse width (µs) to duty cycle for the LEDC peripheral.
     // Formula: duty = (pulse_us / period_us) × (2^resolution - 1)
-    return (uint32_t)((float)pulse_us / (float)PWM_PERIOD_US * 65535.0f);
+    return (uint32_t)((float)pulse_us / (float)PWM_PERIOD_US * (float)((1u << PWM_RESOLUTION_BITS) - 1));
 }
 
 uint32_t MotorController::speedToDuty(float speed, bool reversed) {
@@ -20,11 +20,19 @@ uint32_t MotorController::speedToDuty(float speed, bool reversed) {
     // Optionally invert for mirrored motors (see MOTOR_LEFT/RIGHT_REVERSED in config.h)
     if (reversed) speed = -speed;
 
-    // Map [-1.0, 1.0] → [PWM_MIN_US, PWM_MAX_US]
+    // Map [-1.0, 1.0] → [NEUTRAL - halfRange, NEUTRAL + halfRange]
     //   speed  0.0 → 1500µs (neutral/stop)
-    //   speed  1.0 → 2000µs (full forward)
-    //   speed -1.0 → 1000µs (full reverse)
-    uint32_t pulse_us = (uint32_t)(PWM_NEUTRAL_US + speed * 500.0f);
+    //   speed  1.0 → 1500 + _halfRangeUs µs (full forward)
+    //   speed -1.0 → 1500 - _halfRangeUs µs (full reverse)
+    //
+    // NOTE: Do NOT clamp to PWM_MIN_US/PWM_MAX_US here — that would silently
+    // override the user-configured extended range.  setDriveRange() already
+    // validates _halfRangeUs ≤ 950, so the computed pulse stays within
+    // 550–2450 µs which is safe for all common ESCs and servos.
+    // An absolute hardware-safety clamp (500–2500 µs) is intentionally wide.
+    uint32_t pulse_us = (uint32_t)(PWM_NEUTRAL_US + speed * (float)_halfRangeUs);
+    if (pulse_us < 500u)   pulse_us = 500u;    // absolute floor — never below 500 µs
+    if (pulse_us > 2500u)  pulse_us = 2500u;   // absolute ceiling — never above 2500 µs
     return usToDuty(pulse_us);
 }
 
@@ -95,4 +103,12 @@ void MotorController::stopAll() {
     writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
     _weaponActive = false;
     Serial.println("[Motors] All stopped.");
+}
+
+void MotorController::setDriveRange(uint16_t halfRangeUs) {
+    if (halfRangeUs < 200)  halfRangeUs = 200;   // floor: avoids very twitchy near-zero range
+    if (halfRangeUs > 950)  halfRangeUs = 950;   // ceiling: keeps pulse inside ~550–2450 µs
+    _halfRangeUs = halfRangeUs;
+    Serial.printf("[Motors] Drive range set to ±%u µs (pulse: %u–%u µs)\n",
+                  _halfRangeUs, PWM_NEUTRAL_US - _halfRangeUs, PWM_NEUTRAL_US + _halfRangeUs);
 }

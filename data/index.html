@@ -155,7 +155,7 @@
       display: none;
     }
 
-    /* ── WiFi Settings ──────────────────────────────────────────────────── */
+    /* ── Settings button ────────────────────────────────────────────────── */
     #settings-btn {
       width: 100%;
       max-width: 500px;
@@ -170,45 +170,140 @@
     }
     #settings-btn:hover { border-color: #e94560; color: #eee; }
 
-    /* ── Modal ──────────────────────────────────────────────────────────── */
-    #modal-overlay {
+    /* ── Settings overlay (slide-up panel) ───────────────────────────────── */
+    #settings-overlay {
       display: none;
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75);
+      align-items: flex-end;
+      justify-content: center;
       z-index: 100;
     }
-    #modal-overlay.open { display: flex; }
-    #modal {
+    #settings-overlay.open { display: flex; }
+    #settings-panel {
       background: #16213e;
-      border-radius: 16px;
-      padding: 24px;
-      width: 90%;
-      max-width: 400px;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      overflow: hidden;
     }
-    #modal h2 { font-size: 1.1rem; color: #e94560; }
-    #modal p  { font-size: 0.8rem; color: #888; }
-    #modal input {
-      width: 100%;
-      padding: 10px 14px;
-      background: #1a1a2e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      color: #eee;
-      font-size: 0.9rem;
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px;
+      flex-shrink: 0;
     }
-    #modal input:focus { outline: none; border-color: #e94560; }
-    .modal-buttons { display: flex; gap: 12px; }
-    .modal-buttons button {
-      flex: 1; padding: 10px;
-      border-radius: 8px; border: none;
-      font-size: 0.9rem; cursor: pointer;
+    .settings-header span { font-size: 1.1rem; color: #e94560; font-weight: 600; }
+    #settings-close {
+      background: none; border: none;
+      color: #888; font-size: 1.3rem; line-height: 1;
+      cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      transition: color 0.2s;
     }
-    #modal-save { background: #e94560; color: white; }
-    #modal-cancel { background: #333; color: #aaa; }
+    #settings-close:hover { color: #e94560; }
+
+    /* ── Tabs ─────────────────────────────────────────────────────────────── */
+    .settings-tabs {
+      display: flex;
+      padding: 0 16px;
+      border-bottom: 1px solid #2a2a4a;
+      flex-shrink: 0;
+    }
+    .settings-tabs .tab {
+      flex: 1; padding: 10px 4px;
+      background: none; border: none;
+      border-bottom: 2px solid transparent;
+      color: #555; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      cursor: pointer; transition: color 0.2s, border-color 0.2s;
+    }
+    .settings-tabs .tab.active { color: #e94560; border-bottom-color: #e94560; }
+
+    /* ── Tab content ──────────────────────────────────────────────────────── */
+    .tab-content {
+      display: none; flex: 1; overflow-y: auto;
+      padding: 20px; flex-direction: column; gap: 18px;
+    }
+    .tab-content.active { display: flex; }
+
+    /* ── Setting rows ─────────────────────────────────────────────────────── */
+    .setting-row { display: flex; flex-direction: column; gap: 8px; }
+    .setting-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .setting-desc  { font-size: 0.75rem; color: #555; line-height: 1.5; }
+
+    /* ── Radio pills ──────────────────────────────────────────────────────── */
+    .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .radio-group label { flex: 1; min-width: 70px; }
+    .radio-group input[type=radio] { display: none; }
+    .pill {
+      display: block; padding: 8px 6px;
+      background: #1a1a2e; border: 1px solid #333;
+      border-radius: 8px; color: #555;
+      font-size: 0.8rem; text-align: center;
+      cursor: pointer; user-select: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .radio-group input[type=radio]:checked + .pill { border-color: #e94560; color: #e94560; }
+
+    /* ── Toggle switch ────────────────────────────────────────────────────── */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+    .toggle-switch input { display: none; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: #333; border-radius: 13px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-track::after {
+      content: ''; position: absolute;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #555; top: 3px; left: 3px;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: rgba(76,175,80,0.25); }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(22px); background: #4caf50; }
+
+    /* ── Range sliders ────────────────────────────────────────────────────── */
+    .range-row { display: flex; align-items: center; gap: 12px; }
+    .range-row input[type=range] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px; background: #333; outline: none;
+    }
+    .range-row input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px;
+      border-radius: 50%; background: #e94560; cursor: pointer;
+    }
+    .range-row input[type=range]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%; background: #e94560; cursor: pointer; border: none;
+    }
+    .range-value { width: 3.2em; text-align: right; font-size: 0.8rem; color: #aaa; font-family: monospace; }
+
+    /* ── Settings form elements ───────────────────────────────────────────── */
+    .settings-input {
+      width: 100%; padding: 10px 14px;
+      background: #1a1a2e; border: 1px solid #333;
+      border-radius: 8px; color: #eee; font-size: 0.9rem;
+    }
+    .settings-input:focus { outline: none; border-color: #e94560; }
+    .settings-input::placeholder { color: #444; }
+    .s-btn-primary {
+      width: 100%; padding: 11px;
+      background: #e94560; border: none; border-radius: 8px;
+      color: white; font-size: 0.9rem; cursor: pointer; transition: opacity 0.2s;
+    }
+    .s-btn-primary:hover { opacity: 0.85; }
+    .s-btn-danger {
+      width: 100%; padding: 9px;
+      background: none; border: 1px solid #444; border-radius: 8px;
+      color: #777; font-size: 0.8rem; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .s-btn-danger:hover { border-color: #e94560; color: #e94560; }
 
     /* ── Version footer ───────────────────────────────────────────────── */
     #fw-version {
@@ -288,20 +383,133 @@
   </div>
 
   <!-- ── Settings ─────────────────────────────────────────────────────────── -->
-  <button id="settings-btn">⚙ WiFi Settings</button>
+  <button id="settings-btn">⚙ Settings</button>
   <!-- ── Firmware version ────────────────────────────────────────────────────── -->
   <div id="fw-version">fw —</div>
-  <!-- ── WiFi Modal ────────────────────────────────────────────────────────── -->
-  <div id="modal-overlay">
-    <div id="modal">
-      <h2>Connect to WiFi Network</h2>
-      <p>Enter your home WiFi credentials. The robot will reboot and try to connect.
-         If it fails, it will return to Access Point mode.</p>
-      <input type="text"     id="wifi-ssid" placeholder="WiFi Network Name (SSID)">
-      <input type="password" id="wifi-pass" placeholder="WiFi Password">
-      <div class="modal-buttons">
-        <button id="modal-cancel">Cancel</button>
-        <button id="modal-save">Save &amp; Reboot</button>
+
+  <!-- ── Settings Panel ───────────────────────────────────────────────────── -->
+  <div id="settings-overlay">
+    <div id="settings-panel">
+      <div class="settings-header">
+        <span>⚙ Settings</span>
+        <button id="settings-close">✕</button>
+      </div>
+      <div class="settings-tabs">
+        <button class="tab active" data-tab="drive">Drive</button>
+        <button class="tab" data-tab="channels">Channels</button>
+        <button class="tab" data-tab="ble">BLE</button>
+        <button class="tab" data-tab="wifi">WiFi</button>
+        <button class="tab" data-tab="identity">Identity</button>
+      </div>
+
+      <!-- ── Drive tab ────────────────────────────────────────────────── -->
+      <div class="tab-content active" id="tab-drive">
+        <div class="setting-row">
+          <div class="setting-label">Control Mode</div>
+          <div class="radio-group">
+            <label><input type="radio" name="drive-mode" value="arcade" checked><span class="pill">Arcade</span></label>
+            <label><input type="radio" name="drive-mode" value="expo"><span class="pill">Expo</span></label>
+            <label><input type="radio" name="drive-mode" value="precision"><span class="pill">Precision</span></label>
+            <label><input type="radio" name="drive-mode" value="rc"><span class="pill">RC Car</span></label>
+          </div>
+          <div class="setting-desc" id="mode-desc">Standard arcade mixing — Y = forward/back, X = turn. Full bidirectional control.</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Speed Limit</div>
+          <div class="range-row">
+            <input type="range" id="speed-limit" min="10" max="100" value="100" step="5">
+            <span class="range-value" id="speed-limit-val">100%</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Deadzone</div>
+          <div class="range-row">
+            <input type="range" id="deadzone" min="0" max="25" value="5" step="1">
+            <span class="range-value" id="deadzone-val">5%</span>
+          </div>
+          <div class="setting-desc">Minimum joystick threshold — ignores small unintentional inputs near center.</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Invert Y Axis</div>
+          <div class="toggle-row">
+            <span class="setting-desc" style="margin:0">Push stick down = forward</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="invert-y">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Servo / ESC Range</div>
+          <div class="range-row">
+            <input type="range" id="pwm-range" min="200" max="950" value="500" step="25">
+            <span class="range-value" id="pwm-range-val">500µs</span>
+          </div>
+          <div class="setting-desc" id="pwm-range-desc">Pulse ±500 µs → 1000–2000 µs (standard). Increase if motors only move part of their travel at full stick. Apply sends the new range to the robot immediately.</div>
+        </div>
+        <button class="s-btn-primary" id="drive-apply">Apply Drive Settings</button>
+      </div>
+
+      <!-- ── Channels tab ─────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-channels">
+        <div class="setting-desc">Rename controls to match your robot's physical layout. Saved locally in the browser.</div>
+        <div class="setting-row">
+          <div class="setting-label">Drive Control Label</div>
+          <input class="settings-input" type="text" id="ch-drive-name" placeholder="Drive" maxlength="24">
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Weapon Control Label</div>
+          <input class="settings-input" type="text" id="ch-weapon-name" placeholder="Weapon Motor" maxlength="24">
+        </div>
+        <button class="s-btn-primary" id="channels-apply">Apply Labels</button>
+      </div>
+
+      <!-- ── BLE tab ──────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-ble">
+        <div class="setting-row">
+          <div class="setting-label">Bluetooth Control</div>
+          <div class="toggle-row">
+            <span class="setting-desc" style="margin:0">Accept BLE drive commands</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="ble-enabled" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="setting-desc">When disabled the robot ignores BLE commands and zeroes any BLE-driven motion immediately. No reboot required.</div>
+        </div>
+        <div class="setting-desc" style="color:#3a3a5a">Tip: BLE and WiFi share the same 2.4 GHz radio. Disabling BLE can reduce latency on congested networks.</div>
+      </div>
+
+      <!-- ── WiFi tab ─────────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-wifi">
+        <div class="setting-desc">Connect to your home network. The robot reboots and tries to connect — if it fails it returns to Access Point mode.</div>
+        <div class="setting-row">
+          <div class="setting-label">Network Name (SSID)</div>
+          <input class="settings-input" type="text" id="wifi-ssid" placeholder="WiFi Network Name" autocomplete="off">
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Password</div>
+          <input class="settings-input" type="password" id="wifi-pass" placeholder="WiFi Password" autocomplete="off">
+        </div>
+        <button class="s-btn-primary" id="wifi-save">Save &amp; Reboot</button>
+        <button class="s-btn-danger" id="wifi-forget">🗑 Forget saved WiFi &amp; return to AP mode</button>
+      </div>
+
+      <!-- ── Identity tab ────────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-identity">
+        <div class="setting-desc">The robot name is used as the WiFi AP SSID, BLE device name, and page title. The default is auto-generated from the MAC address (Rotato-XXXX).</div>
+        <div class="setting-row">
+          <div class="setting-label">Robot Name</div>
+          <input class="settings-input" type="text" id="identity-name" placeholder="e.g. BladeRunner" maxlength="32" autocomplete="off">
+          <span id="identity-name-error" style="color:#e94560;font-size:0.8rem;display:none"></span>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Access Point Password</div>
+          <input class="settings-input" type="password" id="identity-ap-pass" placeholder="8–63 characters (leave blank to keep current)" maxlength="63" autocomplete="new-password">
+          <span id="identity-pass-error" style="color:#e94560;font-size:0.8rem;display:none"></span>
+        </div>
+        <button class="s-btn-primary" id="identity-save" style="margin-top:4px">Save &amp; Reboot</button>
+        <button class="s-btn-danger"  id="identity-reset" style="margin-top:4px">↩ Reset to Default Name &amp; Reboot</button>
       </div>
     </div>
   </div>
@@ -394,11 +602,104 @@
       // Firmware version (sent once per status packet)
       if (data.fw) document.getElementById('fw-version').textContent = 'fw ' + data.fw;
 
+      // Robot name — update page title, header, and identity tab field
+      if (data.name) {
+        document.title = data.name + ' Controller';
+        document.querySelector('header h1').textContent = data.name.toUpperCase();
+        const nameInput = document.getElementById('identity-name');
+        if (document.activeElement !== nameInput) nameInput.value = data.name;
+      }
+
       // Sync weapon button state with robot (in case another client changed it)
       if (typeof data.weapon !== 'undefined') {
         weaponActive = data.weapon;
         updateWeaponButton();
       }
+    }
+
+    // ── Drive settings & input transform ───────────────────────────────────────────
+    //
+    // appSettings is persisted to localStorage and loaded on every page open.
+    // transformDriveInput() applies deadzone, axis inversion, speed limit, and
+    // the active mode curve before X/Y values are sent to the robot.
+    //
+    // Modes (firmware always uses arcade mixing: left=Y+X, right=Y-X):
+    //   arcade    — linear, full bidirectional (default)
+    //   expo      — cubic 0.5x³+0.5x: fine near center, full at edges
+    //   precision — square-law sign(x)|x|^1.5: very fine low-speed response
+    //   rc        — expo steering, forward-biased throttle (reverse ≤ 30%)
+
+    const MODE_DESCS = {
+      arcade:    'Standard arcade mixing — Y = forward/back, X = turn. Full bidirectional control.',
+      expo:      'Exponential response — precision near center, responsive at full deflection.',
+      precision: 'Square-law response — very fine control at low throttle. Best for tight maneuvers.',
+      rc:        'Forward-biased expo throttle with expo steering. Reverse capped at 30%.'
+    };
+
+    let appSettings = {
+      driveMode: 'arcade', speedLimit: 100, deadzone: 5,
+      invertY: false, channelDrive: '', channelWeapon: '', bleEnabled: true,
+      pwmRange: 500   // half-range µs sent to firmware (default = standard 500)
+    };
+
+    function saveAppSettings() {
+      localStorage.setItem('rotato-settings', JSON.stringify(appSettings));
+    }
+
+    function applyChannelNames() {
+      document.querySelector('#joystick-container h2').textContent = appSettings.channelDrive  || 'Drive';
+      document.querySelector('#weapon-container h2').textContent   = appSettings.channelWeapon || 'Weapon Motor';
+    }
+
+    function syncSettingsControls() {
+      const modeEl = document.querySelector(`input[name=drive-mode][value="${appSettings.driveMode}"]`);
+      if (modeEl) { modeEl.checked = true; document.getElementById('mode-desc').textContent = MODE_DESCS[appSettings.driveMode] || ''; }
+      document.getElementById('speed-limit').value          = appSettings.speedLimit;
+      document.getElementById('speed-limit-val').textContent = appSettings.speedLimit + '%';
+      document.getElementById('deadzone').value              = appSettings.deadzone;
+      document.getElementById('deadzone-val').textContent    = appSettings.deadzone + '%';
+      document.getElementById('invert-y').checked            = appSettings.invertY;
+      document.getElementById('ble-enabled').checked         = appSettings.bleEnabled;
+      document.getElementById('ch-drive-name').value         = appSettings.channelDrive;
+      document.getElementById('ch-weapon-name').value        = appSettings.channelWeapon;
+      document.getElementById('pwm-range').value             = appSettings.pwmRange;
+      document.getElementById('pwm-range-val').textContent   = appSettings.pwmRange + 'µs';
+      _updatePwmRangeDesc(appSettings.pwmRange);
+    }
+
+    function loadAppSettings() {
+      try { Object.assign(appSettings, JSON.parse(localStorage.getItem('rotato-settings') || '{}')); } catch(e) {}
+      applyChannelNames();
+      syncSettingsControls();
+    }
+
+    function expoCurve(v)      { return 0.5 * v * v * v + 0.5 * v; }
+    function precisionCurve(v) { return (v >= 0 ? 1 : -1) * Math.pow(Math.abs(v), 1.5); }
+
+    function transformDriveInput(rawX, rawY) {
+      const dz = appSettings.deadzone / 100;
+      const sl = appSettings.speedLimit / 100;
+      function applyDZ(v) {
+        if (Math.abs(v) < dz) return 0;
+        return (v > 0 ? 1 : -1) * (Math.abs(v) - dz) / (1 - dz);
+      }
+      let x = applyDZ(rawX);
+      let y = applyDZ(rawY);
+      if (appSettings.invertY) y = -y;
+      switch (appSettings.driveMode) {
+        case 'expo':      x = expoCurve(x);      y = expoCurve(y);      break;
+        case 'precision': x = precisionCurve(x); y = precisionCurve(y); break;
+        case 'rc':        x = expoCurve(x);      if (y < 0) y = Math.max(y, -0.3); break;
+      }
+      return { x: x * sl, y: y * sl };
+    }
+
+    function startDriveSendTimer() {
+      if (sendTimer) clearInterval(sendTimer);
+      sendTimer = setInterval(() => {
+        const t = transformDriveInput(driveX, driveY);
+        sendJSON({ type: 'drive', x: Math.round(t.x * 100) / 100, y: Math.round(t.y * 100) / 100 });
+      }, 50);
     }
 
     // ── Joystick ───────────────────────────────────────────────────────────────
@@ -498,9 +799,7 @@
     canvas.addEventListener('mousedown', e => {
       joystickActive = true;
       updateKnob(getCanvasPos(e));
-      sendTimer = setInterval(() => {
-        sendJSON({ type: 'drive', x: Math.round(driveX * 100) / 100, y: Math.round(driveY * 100) / 100 });
-      }, 50);
+      startDriveSendTimer();
     });
     canvas.addEventListener('mousemove', e => { if (joystickActive) updateKnob(getCanvasPos(e)); });
     canvas.addEventListener('mouseup',   () => releaseJoystick());
@@ -511,9 +810,7 @@
       e.preventDefault();
       joystickActive = true;
       updateKnob(getCanvasPos(e));
-      sendTimer = setInterval(() => {
-        sendJSON({ type: 'drive', x: Math.round(driveX * 100) / 100, y: Math.round(driveY * 100) / 100 });
-      }, 50);
+      startDriveSendTimer();
     }, { passive: false });
     canvas.addEventListener('touchmove', e => { e.preventDefault(); if (joystickActive) updateKnob(getCanvasPos(e)); }, { passive: false });
     canvas.addEventListener('touchend',  e => { e.preventDefault(); releaseJoystick(); }, { passive: false });
@@ -538,34 +835,165 @@
       sendJSON({ type: 'weapon', active: weaponActive });
     });
 
-    // ── WiFi settings modal ────────────────────────────────────────────────────
-    const modal   = document.getElementById('modal-overlay');
-    const ssidIn  = document.getElementById('wifi-ssid');
-    const passIn  = document.getElementById('wifi-pass');
+    // ── Settings panel ─────────────────────────────────────────────────────────
+    const settingsOverlay = document.getElementById('settings-overlay');
 
     document.getElementById('settings-btn').addEventListener('click', () => {
-      modal.classList.add('open');
-      ssidIn.focus();
+      settingsOverlay.classList.add('open');
+    });
+    document.getElementById('settings-close').addEventListener('click', () => {
+      settingsOverlay.classList.remove('open');
+    });
+    settingsOverlay.addEventListener('click', e => {
+      if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
     });
 
-    document.getElementById('modal-cancel').addEventListener('click', () => {
-      modal.classList.remove('open');
-      ssidIn.value = '';
-      passIn.value = '';
+    // Tab switching
+    document.querySelectorAll('.settings-tabs .tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.settings-tabs .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
     });
 
-    document.getElementById('modal-save').addEventListener('click', () => {
-      const ssid = ssidIn.value.trim();
-      const pass = passIn.value;
-      if (!ssid) { ssidIn.focus(); return; }
+    // Live range value display
+    document.getElementById('speed-limit').addEventListener('input', function() {
+      document.getElementById('speed-limit-val').textContent = this.value + '%';
+    });
+    document.getElementById('deadzone').addEventListener('input', function() {
+      document.getElementById('deadzone-val').textContent = this.value + '%';
+    });
+    function _updatePwmRangeDesc(us) {
+      const lo = 1500 - us, hi = 1500 + us;
+      document.getElementById('pwm-range-desc').textContent =
+        `Pulse ±${us} µs → ${lo}–${hi} µs. ` +
+        (us <= 500 ? 'Standard RC range.' : us <= 700 ? 'Extended range — verify ESC accepts this.' : 'Wide range — use with care.');
+    }
+    document.getElementById('pwm-range').addEventListener('input', function() {
+      document.getElementById('pwm-range-val').textContent = this.value + 'µs';
+      _updatePwmRangeDesc(parseInt(this.value));
+    });
+
+    // Live mode description
+    document.querySelectorAll('input[name=drive-mode]').forEach(r => {
+      r.addEventListener('change', () => {
+        document.getElementById('mode-desc').textContent = MODE_DESCS[r.value] || '';
+      });
+    });
+
+    // Apply drive settings
+    document.getElementById('drive-apply').addEventListener('click', () => {
+      appSettings.driveMode  = document.querySelector('input[name=drive-mode]:checked').value;
+      appSettings.speedLimit = parseInt(document.getElementById('speed-limit').value);
+      appSettings.deadzone   = parseInt(document.getElementById('deadzone').value);
+      appSettings.invertY    = document.getElementById('invert-y').checked;
+      appSettings.pwmRange   = parseInt(document.getElementById('pwm-range').value);
+      saveAppSettings();
+      // Send new range to robot immediately (no reboot needed)
+      sendJSON({ type: 'pwm_range', us: appSettings.pwmRange });
+      settingsOverlay.classList.remove('open');
+    });
+
+    // Apply channel labels
+    document.getElementById('channels-apply').addEventListener('click', () => {
+      appSettings.channelDrive  = document.getElementById('ch-drive-name').value.trim();
+      appSettings.channelWeapon = document.getElementById('ch-weapon-name').value.trim();
+      saveAppSettings();
+      applyChannelNames();
+      settingsOverlay.classList.remove('open');
+    });
+
+    // BLE toggle — immediate effect on robot, no reboot
+    document.getElementById('ble-enabled').addEventListener('change', function() {
+      appSettings.bleEnabled = this.checked;
+      saveAppSettings();
+      sendJSON({ type: 'ble_enable', enabled: this.checked });
+    });
+
+    // WiFi save
+    document.getElementById('wifi-save').addEventListener('click', () => {
+      const ssid = document.getElementById('wifi-ssid').value.trim();
+      const pass = document.getElementById('wifi-pass').value;
+      if (!ssid) { document.getElementById('wifi-ssid').focus(); return; }
       if (confirm('Save WiFi settings and reboot the robot?')) {
         sendJSON({ type: 'settings', ssid, pass });
-        modal.classList.remove('open');
+        settingsOverlay.classList.remove('open');
       }
     });
 
-    // Close modal on overlay click
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+    // WiFi forget
+    document.getElementById('wifi-forget').addEventListener('click', () => {
+      if (confirm('Clear saved WiFi credentials? The robot will reboot into Access Point mode.')) {
+        sendJSON({ type: 'forget' });
+        settingsOverlay.classList.remove('open');
+      }
+    });
+
+    // ── Identity tab ───────────────────────────────────────────────────────────
+    // Names matching "Rotato-XXXX" (4 hex chars) are reserved for auto-generated defaults.
+    function isReservedName(name) {
+      return /^Rotato-[0-9A-Fa-f]{4}$/i.test(name.trim());
+    }
+
+    // Combined Save & Reboot — validates both fields then sends whichever changed.
+    // The robot only reboots once because the first message that triggers a reboot
+    // will restart before the second arrives, so we only send what's actually filled in.
+    // If both are filled, name is sent first (it reboots), so password is sent second
+    // on the next boot — which is fine because these are independent NVS keys.
+    // In practice users will typically only change one field at a time.
+    document.getElementById('identity-save').addEventListener('click', () => {
+      const nameEl    = document.getElementById('identity-name');
+      const nameErrEl = document.getElementById('identity-name-error');
+      const passEl    = document.getElementById('identity-ap-pass');
+      const passErrEl = document.getElementById('identity-pass-error');
+      const newName   = nameEl.value.trim();
+      const newPass   = passEl.value;
+
+      nameErrEl.style.display = 'none';
+      passErrEl.style.display = 'none';
+
+      // Validate name (if provided)
+      if (newName && isReservedName(newName)) {
+        nameErrEl.textContent = 'That name is reserved for hardware-generated default names (Rotato-XXXX).';
+        nameErrEl.style.display = 'block';
+        return;
+      }
+
+      // Validate password (if provided)
+      if (newPass && (newPass.length < 8 || newPass.length > 63)) {
+        passErrEl.textContent = 'Password must be 8–63 characters.';
+        passErrEl.style.display = 'block';
+        return;
+      }
+
+      if (!newName && !newPass) return;  // Nothing to save
+
+      const parts = [];
+      if (newName) parts.push('name to "' + newName + '"');
+      if (newPass) parts.push('AP password');
+      if (!confirm('Save ' + parts.join(' and ') + '? The robot will reboot.')) return;
+
+      // Send password first (if set) — then name triggers the reboot.
+      // If only password is set, it sends that and reboots.
+      if (newPass) sendJSON({ type: 'ap_password', pass: newPass });
+      if (newName) sendJSON({ type: 'rename', name: newName });
+      else if (newPass) { /* reboot already triggered by ap_password */ }
+
+      passEl.value = '';
+      settingsOverlay.classList.remove('open');
+    });
+
+    document.getElementById('identity-reset').addEventListener('click', () => {
+      if (confirm('Reset robot name to the hardware default (Rotato-XXXX)? The robot will reboot.')) {
+        sendJSON({ type: 'rename', name: '' });
+        settingsOverlay.classList.remove('open');
+      }
+    });
+
+    // Restore persisted settings on page load
+    loadAppSettings();
 
     // ── Fullscreen ─────────────────────────────────────────────────────────────
     const fsBtn = document.getElementById('fullscreen-btn');
