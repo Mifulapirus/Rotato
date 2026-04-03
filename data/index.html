@@ -155,37 +155,36 @@
       display: none;
     }
 
-    /* ── Settings button ────────────────────────────────────────────────── */
+    /* ── Settings button (frameless gear icon in status bar) ──────────── */
     #settings-btn {
-      width: 100%;
-      max-width: 500px;
-      padding: 12px;
-      background: #16213e;
-      border: 1px solid #333;
-      border-radius: 12px;
+      background: none;
+      border: none;
+      padding: 0;
       color: #888;
-      font-size: 0.85rem;
+      font-size: 1.3rem;
+      line-height: 1;
       cursor: pointer;
-      transition: border-color 0.2s;
+      flex-shrink: 0;
+      transition: color 0.2s;
     }
-    #settings-btn:hover { border-color: #e94560; color: #eee; }
+    #settings-btn:hover { color: #e94560; }
 
-    /* ── Settings overlay (slide-up panel) ───────────────────────────────── */
+    /* ── Settings overlay (centered modal) ─────────────────────────────── */
     #settings-overlay {
       display: none;
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.75);
-      align-items: flex-end;
+      align-items: center;
       justify-content: center;
       z-index: 100;
     }
     #settings-overlay.open { display: flex; }
     #settings-panel {
       background: #16213e;
-      border-radius: 20px 20px 0 0;
-      width: 100%;
+      border-radius: 20px;
+      width: calc(100% - 32px);
       max-width: 500px;
-      max-height: 85vh;
+      height: 85vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -305,6 +304,28 @@
     }
     .s-btn-danger:hover { border-color: #e94560; color: #e94560; }
 
+    /* ── Battery calibration ──────────────────────────────────────────────── */
+    .batt-live-voltage {
+      font-size: 2.8rem; font-weight: 700; font-family: monospace;
+      color: #4caf50; text-align: center; letter-spacing: 2px;
+      transition: color 0.5s;
+    }
+    .batt-live-voltage.warn  { color: #ffc107; }
+    .batt-live-voltage.crit  { color: #e94560; }
+    .batt-preview {
+      font-size: 0.85rem; font-family: monospace; color: #888; text-align: right;
+    }
+    .batt-preview span { color: #eee; }
+    .batt-calib-divider {
+      border: none; border-top: 1px solid #2a2a4a; margin: 4px 0;
+    }
+    html[data-theme="light"] .batt-live-voltage      { color: #388e3c; }
+    html[data-theme="light"] .batt-live-voltage.warn { color: #f57f17; }
+    html[data-theme="light"] .batt-live-voltage.crit { color: #c62828; }
+    html[data-theme="light"] .batt-preview           { color: #888; }
+    html[data-theme="light"] .batt-preview span      { color: #1a1a2e; }
+    html[data-theme="light"] .batt-calib-divider     { border-color: #e0e3f0; }
+
     /* ── Version footer ───────────────────────────────────────────────── */
     #fw-version {
       font-size: 0.7rem;
@@ -334,6 +355,73 @@
       transition: border-color 0.2s, color 0.2s;
     }
     #fullscreen-btn:hover { border-color: #e94560; color: #eee; }
+
+    /* ── Control Row (joystick + weapon; side-by-side on desktop) ──────────── */
+    #control-row {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Theme toggle button ──────────────────────────────────────────────── */
+    #theme-btn {
+      background: none; border: 1px solid #333;
+      border-radius: 6px; color: #888; font-size: 1.05rem;
+      width: 32px; height: 32px; cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #theme-btn:hover { border-color: #e94560; color: #eee; }
+
+    /* ── Desktop layout (>= 768 px) ────────────────────────────────────────── */
+    @media (min-width: 768px) {
+      header, #status-bar, #control-row, #fw-version { max-width: 1100px; }
+      #control-row    { flex-direction: row; align-items: stretch; }
+      #joystick-container { flex: 1; max-width: none; }
+      #weapon-container   { width: 220px; max-width: 220px; flex-shrink: 0; justify-content: center; }
+      #joystick-canvas {
+        width:  min(calc(50vw - 80px), 500px);
+        height: min(calc(50vw - 80px), 500px);
+      }
+    }
+
+    /* ── Light theme overrides ─────────────────────────────────────────────── */
+    html[data-theme="light"] body                  { background: #f0f2f8; color: #1a1a2e; }
+    html[data-theme="light"] header p               { color: #667; }
+    html[data-theme="light"] #status-bar            { background: #fff; }
+    html[data-theme="light"] .status-label          { color: #667; }
+    html[data-theme="light"] #battery-pct,
+    html[data-theme="light"] #ip-text               { color: #667; }
+    html[data-theme="light"] #battery-bar-bg        { background: #dde0ed; }
+    html[data-theme="light"] #conn-dot              { background: #bbb; }
+    html[data-theme="light"] #joystick-container,
+    html[data-theme="light"] #weapon-container      { background: #fff; }
+    html[data-theme="light"] #joystick-container h2 { color: #667; }
+    html[data-theme="light"] #drive-values          { color: #bbb; }
+    html[data-theme="light"] #weapon-btn            { background: #fff; color: #e94560; }
+    html[data-theme="light"] #weapon-btn.active     { background: #e94560; color: #fff; }
+    html[data-theme="light"] #settings-btn          { color: #aaa; }
+    html[data-theme="light"] #fw-version            { color: #ccc; }
+    html[data-theme="light"] #fullscreen-btn        { border-color: #dde0ed; color: #aaa; }
+    html[data-theme="light"] #settings-panel        { background: #fff; border-radius: 20px; }
+    html[data-theme="light"] .settings-header span   { color: #e94560; }
+    html[data-theme="light"] #settings-close        { color: #999; }
+    html[data-theme="light"] #theme-btn             { border-color: #dde0ed; color: #999; }
+    html[data-theme="light"] .settings-tabs         { border-bottom-color: #e0e3f0; }
+    html[data-theme="light"] .settings-tabs .tab    { color: #999; }
+    html[data-theme="light"] .setting-label         { color: #667; }
+    html[data-theme="light"] .setting-desc          { color: #888; }
+    html[data-theme="light"] .pill                  { background: #f4f5fb; border-color: #dde0ed; color: #888; }
+    html[data-theme="light"] .radio-group input[type=radio]:checked + .pill { border-color: #e94560; color: #e94560; }
+    html[data-theme="light"] .toggle-track          { background: #d8d8e5; }
+    html[data-theme="light"] .toggle-track::after   { background: #aaa; }
+    html[data-theme="light"] .range-row input[type=range] { background: #d8d8e5; }
+    html[data-theme="light"] .range-value           { color: #667; }
+    html[data-theme="light"] .settings-input        { background: #f4f5fb; border-color: #dde0ed; color: #1a1a2e; }
+    html[data-theme="light"] .settings-input::placeholder { color: #bbb; }
+    html[data-theme="light"] .s-btn-danger          { border-color: #dde0ed; color: #aaa; }
   </style>
 </head>
 <body>
@@ -366,24 +454,26 @@
       <div class="status-label">IP</div>
       <div id="ip-text">...</div>
     </div>
+    <button id="settings-btn" title="Settings">⚙</button>
   </div>
 
-  <!-- ── Joystick ─────────────────────────────────────────────────────────── -->
-  <div id="joystick-container">
-    <h2>Drive</h2>
-    <canvas id="joystick-canvas" width="240" height="240"></canvas>
-    <div id="drive-values">X: 0.00 &nbsp; Y: 0.00</div>
+  <!-- ── Control Row (Joystick + Weapon — side-by-side on desktop) ─────────── -->
+  <div id="control-row">
+
+    <!-- ── Joystick ───────────────────────────────────────────────────────── -->
+    <div id="joystick-container">
+      <h2>Drive</h2>
+      <canvas id="joystick-canvas" width="240" height="240"></canvas>
+      <div id="drive-values">X: 0.00 &nbsp; Y: 0.00</div>
+    </div>
+
+    <!-- ── Weapon ─────────────────────────────────────────────────────────── -->
+    <div id="weapon-container">
+      <button id="weapon-btn">WEAPON<br>OFF</button>
+    </div>
+
   </div>
 
-  <!-- ── Weapon ───────────────────────────────────────────────────────────── -->
-  <div id="weapon-container">
-    <h2>Weapon Motor</h2>
-    <button id="weapon-btn">WEAPON<br>OFF</button>
-    <div id="safety-warning">⚠ Safety switch is blocking weapon</div>
-  </div>
-
-  <!-- ── Settings ─────────────────────────────────────────────────────────── -->
-  <button id="settings-btn">⚙ Settings</button>
   <!-- ── Firmware version ────────────────────────────────────────────────────── -->
   <div id="fw-version">fw —</div>
 
@@ -392,7 +482,10 @@
     <div id="settings-panel">
       <div class="settings-header">
         <span>⚙ Settings</span>
-        <button id="settings-close">✕</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="theme-btn" title="Switch to light theme">☀</button>
+          <button id="settings-close">✕</button>
+        </div>
       </div>
       <div class="settings-tabs">
         <button class="tab active" data-tab="drive">Drive</button>
@@ -400,6 +493,7 @@
         <button class="tab" data-tab="ble">BLE</button>
         <button class="tab" data-tab="wifi">WiFi</button>
         <button class="tab" data-tab="identity">Identity</button>
+        <button class="tab" data-tab="battery">Battery</button>
       </div>
 
       <!-- ── Drive tab ────────────────────────────────────────────────── -->
@@ -511,6 +605,56 @@
         <button class="s-btn-primary" id="identity-save" style="margin-top:4px">Save &amp; Reboot</button>
         <button class="s-btn-danger"  id="identity-reset" style="margin-top:4px">↩ Reset to Default Name &amp; Reboot</button>
       </div>
+
+      <!-- ── Battery Calibration tab ─────────────────────────────────── -->
+      <div class="tab-content" id="tab-battery">
+        <div class="setting-desc">The voltage divider ratio converts the ADC reading into battery voltage. Adjust it here if your multimeter shows a different value than the robot reports.</div>
+
+      <!-- Live reading from robot -->
+        <div class="setting-row" style="align-items:center;gap:4px">
+          <div class="setting-label">Robot Reading</div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <div class="batt-live-voltage" id="batt-live-v">–.– V</div>
+            <div class="setting-desc" id="batt-live-ratio-disp">ratio: –</div>
+          </div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- Manual ratio adjustment -->
+        <div class="setting-row">
+          <div class="setting-label">Divider Ratio</div>
+          <div class="range-row">
+            <input type="range" id="batt-ratio-slider" min="1.0" max="6.0" value="3.0" step="0.01">
+            <span class="range-value" id="batt-ratio-slider-val">3.00</span>
+          </div>
+          <div class="range-row" style="margin-top:4px">
+            <input class="settings-input" type="number" id="batt-ratio-input"
+                   min="1.0" max="6.0" step="0.01" value="3.00"
+                   style="flex:1;padding:8px 10px;font-family:monospace">
+            <span class="setting-desc" style="flex-shrink:0;margin-left:8px;white-space:nowrap">V_batt = V_adc × ratio</span>
+          </div>
+          <div class="batt-preview">Preview: <span id="batt-ratio-preview">–</span></div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- Calibrate from multimeter -->
+        <div class="setting-row">
+          <div class="setting-label">Calibrate from Multimeter</div>
+          <div class="setting-desc">Measure the battery with a voltmeter, enter the exact reading, and the correct ratio will be calculated automatically.</div>
+          <div class="range-row" style="margin-top:6px;gap:8px">
+            <input class="settings-input" type="number" id="batt-measured-v"
+                   step="0.01" placeholder="e.g. 7.82"
+                   style="flex:1;padding:8px 10px;font-family:monospace">
+            <span class="setting-desc" style="flex-shrink:0;white-space:nowrap">V (measured)</span>
+          </div>
+          <div id="batt-calc-msg" style="font-size:0.78rem;margin-top:4px;display:none"></div>
+          <button id="batt-calc-btn" style="margin-top:8px;width:100%;padding:9px;background:none;border:1px solid #e94560;border-radius:8px;color:#e94560;font-size:0.85rem;cursor:pointer;transition:opacity 0.2s;">⟳ Calculate Ratio from Multimeter</button>
+        </div>
+
+        <button class="s-btn-primary" id="batt-apply-btn">Apply &amp; Save Ratio</button>
+      </div>
     </div>
   </div>
 
@@ -593,14 +737,15 @@
       safetyDot.title = isSafe ? 'Weapon allowed' : 'Safety switch blocking weapon';
 
       // Safety warning text on weapon panel
-      document.getElementById('safety-warning').style.display = isSafe ? 'none' : 'block';
       document.getElementById('weapon-btn').disabled = !isSafe;
 
       // IP address
       document.getElementById('ip-text').textContent = data.ip ?? '...';
 
-      // Firmware version (sent once per status packet)
-      if (data.fw) document.getElementById('fw-version').textContent = 'fw ' + data.fw;
+      // Firmware version — set only once (won't change without a reflash)
+      if (data.fw && document.getElementById('fw-version').textContent === 'fw —') {
+        document.getElementById('fw-version').textContent = 'fw ' + data.fw;
+      }
 
       // Robot name — update page title, header, and identity tab field
       if (data.name) {
@@ -614,6 +759,11 @@
       if (typeof data.weapon !== 'undefined') {
         weaponActive = data.weapon;
         updateWeaponButton();
+      }
+
+      // Battery calibration live display
+      if (typeof data.batteryV !== 'undefined' && typeof data.batteryRatio !== 'undefined') {
+        updateBattCalibDisplay(parseFloat(data.batteryV), parseFloat(data.batteryRatio));
       }
     }
 
@@ -639,7 +789,8 @@
     let appSettings = {
       driveMode: 'arcade', speedLimit: 100, deadzone: 5,
       invertY: false, channelDrive: '', channelWeapon: '', bleEnabled: true,
-      pwmRange: 500   // half-range µs sent to firmware (default = standard 500)
+      pwmRange: 500,   // half-range µs sent to firmware (default = standard 500)
+      theme: 'dark'
     };
 
     function saveAppSettings() {
@@ -647,8 +798,7 @@
     }
 
     function applyChannelNames() {
-      document.querySelector('#joystick-container h2').textContent = appSettings.channelDrive  || 'Drive';
-      document.querySelector('#weapon-container h2').textContent   = appSettings.channelWeapon || 'Weapon Motor';
+      document.querySelector('#joystick-container h2').textContent = appSettings.channelDrive || 'Drive';
     }
 
     function syncSettingsControls() {
@@ -670,6 +820,7 @@
     function loadAppSettings() {
       try { Object.assign(appSettings, JSON.parse(localStorage.getItem('rotato-settings') || '{}')); } catch(e) {}
       applyChannelNames();
+      applyTheme();
       syncSettingsControls();
     }
 
@@ -748,15 +899,12 @@
     }
 
     function getCanvasPos(e) {
-      // Get touch/mouse position relative to canvas center
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width  / rect.width;
       const scaleY = canvas.height / rect.height;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top)  * scaleY
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top)  * scaleY
       };
     }
 
@@ -795,25 +943,21 @@
       if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
     }
 
-    // Mouse events
-    canvas.addEventListener('mousedown', e => {
+    // Unified pointer events — setPointerCapture keeps pointermove firing even
+    // when the pointer moves outside the canvas boundary (desktop drag fix).
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
       joystickActive = true;
       updateKnob(getCanvasPos(e));
       startDriveSendTimer();
     });
-    canvas.addEventListener('mousemove', e => { if (joystickActive) updateKnob(getCanvasPos(e)); });
-    canvas.addEventListener('mouseup',   () => releaseJoystick());
-    canvas.addEventListener('mouseleave', () => { if (joystickActive) releaseJoystick(); });
-
-    // Touch events
-    canvas.addEventListener('touchstart', e => {
-      e.preventDefault();
-      joystickActive = true;
+    canvas.addEventListener('pointermove', e => {
+      if (!joystickActive) return;
       updateKnob(getCanvasPos(e));
-      startDriveSendTimer();
-    }, { passive: false });
-    canvas.addEventListener('touchmove', e => { e.preventDefault(); if (joystickActive) updateKnob(getCanvasPos(e)); }, { passive: false });
-    canvas.addEventListener('touchend',  e => { e.preventDefault(); releaseJoystick(); }, { passive: false });
+    });
+    canvas.addEventListener('pointerup',     () => releaseJoystick());
+    canvas.addEventListener('pointercancel', () => releaseJoystick());
 
     // Initial render
     drawJoystick();
@@ -843,9 +987,25 @@
     });
     document.getElementById('settings-close').addEventListener('click', () => {
       settingsOverlay.classList.remove('open');
+      _battDirty = false;
     });
     settingsOverlay.addEventListener('click', e => {
-      if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+      if (e.target === settingsOverlay) { settingsOverlay.classList.remove('open'); _battDirty = false; }
+    });
+
+    // ── Theme toggle ──────────────────────────────────────────────────────────
+    function applyTheme() {
+      const isLight = appSettings.theme === 'light';
+      document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+      const btn = document.getElementById('theme-btn');
+      btn.textContent = isLight ? '🌙' : '☀';
+      btn.title = isLight ? 'Switch to dark theme' : 'Switch to light theme';
+    }
+
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      appSettings.theme = appSettings.theme === 'light' ? 'dark' : 'light';
+      saveAppSettings();
+      applyTheme();
     });
 
     // Tab switching
@@ -990,6 +1150,114 @@
         sendJSON({ type: 'rename', name: '' });
         settingsOverlay.classList.remove('open');
       }
+    });
+
+    // ── Battery calibration tab ────────────────────────────────────────────────
+    let _lastBattV     = 0;
+    let _lastBattRatio = 3.0;
+    let _battDirty     = false;  // true while user is manually adjusting ratio
+
+    function updateBattCalibDisplay(v, ratio) {
+      _lastBattV     = v;
+      _lastBattRatio = ratio;
+      const el = document.getElementById('batt-live-v');
+      el.textContent = v.toFixed(2) + ' V';
+      el.className   = 'batt-live-voltage' +
+                       (v <= 6.2 ? ' crit' : v <= 7.0 ? ' warn' : '');
+      document.getElementById('batt-live-ratio-disp').textContent = 'ratio: ' + ratio.toFixed(4);
+      // Only sync ratio controls when user has not taken manual control
+      if (!_battDirty) {
+        _setBattRatioControls(ratio);
+      }
+    }
+
+    function _setBattRatioControls(ratio) {
+      const r = Math.min(6.0, Math.max(1.0, ratio));
+      document.getElementById('batt-ratio-slider').value = r;
+      document.getElementById('batt-ratio-slider-val').textContent = r.toFixed(2);
+      document.getElementById('batt-ratio-input').value = r.toFixed(4);
+      _updateBattPreview(r);
+    }
+
+    function _updateBattPreview(newRatio) {
+      const previewEl = document.getElementById('batt-ratio-preview');
+      if (_lastBattRatio > 0 && _lastBattV > 0) {
+        const vAdc    = _lastBattV / _lastBattRatio;
+        const preview = vAdc * newRatio;
+        previewEl.textContent = preview.toFixed(2) + ' V';
+      } else {
+        previewEl.textContent = '– (connect robot first)';
+      }
+    }
+
+    document.getElementById('batt-ratio-slider').addEventListener('input', function() {
+      _battDirty = true;
+      const r = parseFloat(this.value);
+      document.getElementById('batt-ratio-slider-val').textContent = r.toFixed(2);
+      document.getElementById('batt-ratio-input').value = r.toFixed(4);
+      _updateBattPreview(r);
+    });
+
+    document.getElementById('batt-ratio-input').addEventListener('input', function() {
+      _battDirty = true;
+      const r = parseFloat(this.value);
+      if (!isNaN(r) && r >= 1.0 && r <= 6.0) {
+        document.getElementById('batt-ratio-slider').value = r;
+        document.getElementById('batt-ratio-slider-val').textContent = r.toFixed(2);
+        _updateBattPreview(r);
+      }
+    });
+
+    document.getElementById('batt-calc-btn').addEventListener('click', () => {
+      const msgEl   = document.getElementById('batt-calc-msg');
+      const inputEl = document.getElementById('batt-measured-v');
+
+      function showMsg(text, isError) {
+        msgEl.textContent  = text;
+        msgEl.style.color  = isError ? '#e94560' : '#4caf50';
+        msgEl.style.display = 'block';
+      }
+
+      const measured = parseFloat(inputEl.value);
+      if (isNaN(measured) || measured <= 0) {
+        showMsg('Enter the voltage you measured with the multimeter.', true);
+        inputEl.focus();
+        return;
+      }
+      if (measured < 3.0 || measured > 12.0) {
+        showMsg('Value out of range. Expected a battery voltage between 3 V and 12 V.', true);
+        inputEl.focus();
+        return;
+      }
+      if (_lastBattRatio <= 0 || _lastBattV <= 0) {
+        showMsg('No live data — connect to the robot first, then try again.', true);
+        return;
+      }
+
+      // V_adc = V_reported / current_ratio  →  new_ratio = V_measured / V_adc
+      const vAdc     = _lastBattV / _lastBattRatio;
+      const newRatio = measured / vAdc;
+
+      if (newRatio < 1.0 || newRatio > 6.0) {
+        showMsg('Calculated ratio (' + newRatio.toFixed(4) + ') is outside 1.0–6.0. ' +
+                'Double-check your measurement and that the robot is reporting a live reading.', true);
+        return;
+      }
+
+      _battDirty = true;
+      _setBattRatioControls(newRatio);
+      msgEl.style.display = 'none';  // hide any previous error
+    });
+
+    document.getElementById('batt-apply-btn').addEventListener('click', () => {
+      const ratio = parseFloat(document.getElementById('batt-ratio-input').value);
+      if (isNaN(ratio) || ratio < 1.0 || ratio > 6.0) {
+        document.getElementById('batt-ratio-input').focus();
+        return;
+      }
+      sendJSON({ type: 'battery_cal', ratio: parseFloat(ratio.toFixed(4)) });
+      _battDirty = false;
+      settingsOverlay.classList.remove('open');
     });
 
     // Restore persisted settings on page load

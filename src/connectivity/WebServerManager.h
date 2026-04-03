@@ -44,6 +44,7 @@ using BleEnableCallback   = std::function<void(bool enabled)>;
 using PwmRangeCallback    = std::function<void(uint16_t halfRangeUs)>;
 using RenameCallback      = std::function<void(const String& name)>;
 using ApPasswordCallback  = std::function<void(const String& pass)>;
+using BatteryCalibCallback = std::function<void(float ratio)>;
 
 class WebServerManager {
 public:
@@ -63,11 +64,12 @@ public:
     void onPwmRange(PwmRangeCallback cb)       { _pwmRangeCallback = cb; }
     void onRename(RenameCallback cb)           { _renameCallback = cb; }
     void onApPassword(ApPasswordCallback cb)   { _apPasswordCallback = cb; }
+    void onBatteryCalib(BatteryCalibCallback cb) { _batteryCalibCallback = cb; }
 
     // Send a status JSON to all connected browser clients.
     // Call this periodically from loop() — e.g. every 500ms.
-    void broadcastStatus(uint8_t batteryPercent, bool safetyOk,
-                         const String& ipAddress, bool weaponActive,
+    void broadcastStatus(uint8_t batteryPercent, float batteryVoltage, float batteryRatio,
+                         bool safetyOk, const String& ipAddress, bool weaponActive,
                          const String& robotName);
 
     // WebSocket cleanup — must be called from loop()
@@ -85,6 +87,7 @@ private:
     PwmRangeCallback    _pwmRangeCallback;
     RenameCallback      _renameCallback;
     ApPasswordCallback  _apPasswordCallback;
+    BatteryCalibCallback _batteryCalibCallback;
 
     // Handle incoming WebSocket messages
     void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);

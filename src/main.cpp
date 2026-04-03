@@ -183,6 +183,10 @@ void setup() {
         wifi.saveApPassword(pass);  // saves + reboots
     });
 
+    webServer.onBatteryCalib([](float ratio) {
+        battery.setRatio(ratio);
+    });
+
     webServer.begin();
 
     // ── 5. BLE ───────────────────────────────────────────────────────────────
@@ -239,6 +243,8 @@ void loop() {
     if (now - lastStatusBroadcast_ms >= WS_STATUS_INTERVAL_MS) {
         webServer.broadcastStatus(
             battery.getPercent(),
+            battery.getVoltage(),
+            battery.getRatio(),
             safety.isSafe(),
             wifi.getIPAddress(),
             motors.isWeaponActive(),

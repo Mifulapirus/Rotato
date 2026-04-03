@@ -22,11 +22,12 @@
 // =============================================================================
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include "config.h"
 
 class BatteryMonitor {
 public:
-    // Configure the ADC pin
+    // Configure the ADC pin and load saved calibration ratio from NVS.
     void begin();
 
     // Read ADC, update rolling average.
@@ -42,12 +43,23 @@ public:
     // Returns true if battery is below safe minimum (BATTERY_VOLTAGE_EMPTY)
     bool isLow() const { return _voltageV < BATTERY_VOLTAGE_EMPTY; }
 
-private:
-    float    _samples[BATTERY_NUM_SAMPLES] = {};  // Circular buffer of readings
-    uint8_t  _sampleIndex = 0;                    // Next write position
-    float    _voltageV    = 7.4f;                 // Current averaged voltage
-    bool     _filled      = false;                // Has the buffer filled once?
+    // Returns the current voltage-divider ratio used for conversion.
+    // Default is BATTERY_R_RATIO from config.h; can be overridden at runtime.
+    float getRatio() const { return _rRatio; }
 
-    // Convert raw 12-bit ADC value to battery voltage
+    // Update the voltage-divider ratio and persist it to NVS so it survives
+    // reboots.  Immediately recomputes the last voltage reading.
+    // ratio must be > 0 and <= 10; values outside that range are ignored.
+    void setRatio(float ratio);
+
+private:
+    float       _samples[BATTERY_NUM_SAMPLES] = {};  // Circular buffer of readings
+    uint8_t     _sampleIndex = 0;                    // Next write position
+    float       _voltageV    = 7.4f;                 // Current averaged voltage
+    bool        _filled      = false;                // Has the buffer filled once?
+    float       _rRatio      = BATTERY_R_RATIO;      // Runtime-adjustable divider ratio
+    Preferences _prefs;                              // NVS storage
+
+    // Convert raw 12-bit ADC value to battery voltage using _rRatio
     float rawToVoltage(int raw) const;
 };

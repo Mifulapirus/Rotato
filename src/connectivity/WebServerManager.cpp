@@ -46,19 +46,22 @@ void WebServerManager::begin() {
     Serial.println("[Web] WebSocket listening at /ws");
 }
 
-void WebServerManager::broadcastStatus(uint8_t batteryPercent, bool safetyOk,
+void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVoltage,
+                                       float batteryRatio, bool safetyOk,
                                        const String& ipAddress, bool weaponActive,
                                        const String& robotName) {
     if (_ws.count() == 0) return;  // No clients — skip
 
     // Build JSON status message
     JsonDocument doc;
-    doc["battery"] = batteryPercent;
-    doc["safety"]  = safetyOk;
-    doc["ip"]      = ipAddress;
-    doc["weapon"]  = weaponActive;
-    doc["fw"]      = FW_VERSION_FULL;
-    doc["name"]    = robotName;
+    doc["battery"]      = batteryPercent;
+    doc["batteryV"]     = batteryVoltage;
+    doc["batteryRatio"] = batteryRatio;
+    doc["safety"]       = safetyOk;
+    doc["ip"]           = ipAddress;
+    doc["weapon"]       = weaponActive;
+    doc["fw"]           = FW_VERSION_FULL;
+    doc["name"]         = robotName;
 
     String json;
     serializeJson(doc, json);
@@ -182,5 +185,15 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             }
             Serial.println("[Web] AP password change requested.");
             if (_apPasswordCallback) _apPasswordCallback(pass);
+        }
+        // ── Battery calibration: {"type":"battery_cal","ratio":3.05} ────────────
+        else if (strcmp(type, "battery_cal") == 0) {
+            float ratio = doc["ratio"] | 0.0f;
+            if (ratio <= 0.0f || ratio > 10.0f) {
+                Serial.printf("[Web] Battery ratio %.4f rejected — out of range.\n", ratio);
+                return;
+            }
+            Serial.printf("[Web] Battery calibration: new ratio = %.4f\n", ratio);
+            if (_batteryCalibCallback) _batteryCalibCallback(ratio);
         }    }
 }
