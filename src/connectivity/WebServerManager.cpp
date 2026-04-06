@@ -49,19 +49,30 @@ void WebServerManager::begin() {
 void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVoltage,
                                        float batteryRatio, bool safetyOk,
                                        const String& ipAddress, bool weaponActive,
-                                       const String& robotName) {
+                                       const String& robotName, bool escReady,
+                                       const char* escCalib, uint8_t weaponSpeedPct) {
     if (_ws.count() == 0) return;  // No clients — skip
 
     // Build JSON status message
     JsonDocument doc;
-    doc["battery"]      = batteryPercent;
-    doc["batteryV"]     = batteryVoltage;
-    doc["batteryRatio"] = batteryRatio;
+    doc["battery"]        = batteryPercent;
+    doc["batteryV"]       = batteryVoltage;
+    doc["batteryRatio"]   = batteryRatio;
+    doc["safety"]         = safetyOk;
+    doc["ip"]             = ipAddress;
+    doc["weapon"]         = weaponActive;
+    doc["weaponSpeed"]    = weaponSpeedPct;   // current ramped output 0–100
+    doc["fw"]             = FW_VERSION_FULL;
+    doc["name"]           = robotName;
+    doc["escReady"]       = escReady;
+    doc["escCalib"]       = escCalib;
     doc["safety"]       = safetyOk;
     doc["ip"]           = ipAddress;
     doc["weapon"]       = weaponActive;
     doc["fw"]           = FW_VERSION_FULL;
     doc["name"]         = robotName;
+    doc["escReady"]     = escReady;
+    doc["escCalib"]     = escCalib;
 
     String json;
     serializeJson(doc, json);
@@ -195,5 +206,25 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             }
             Serial.printf("[Web] Battery calibration: new ratio = %.4f\n", ratio);
             if (_batteryCalibCallback) _batteryCalibCallback(ratio);
+        }
+        // ── ESC full-range calibration: {"type":"esc_calibrate"} ─────────────
+        else if (strcmp(type, "esc_calibrate") == 0) {
+            Serial.println("[Web] ESC full-range calibration requested.");
+            if (_escCalibrateCallback) _escCalibrateCallback();
+        }
+        // ── Weapon slider speed: {"type":"weapon_speed","speed":0.75} ────────
+        else if (strcmp(type, "weapon_speed") == 0) {
+            float speed = doc["speed"] | 0.0f;
+            if (speed < 0.0f) speed = 0.0f;
+            if (speed > 1.0f) speed = 1.0f;
+            if (_weaponSpeedCallback) _weaponSpeedCallback(speed);
+        }
+        // ── Weapon acceleration: {"type":"weapon_accel","ramp_ms":500,"curve":0} ──
+        else if (strcmp(type, "weapon_accel") == 0) {
+            uint16_t rampMs = (uint16_t)(doc["ramp_ms"] | (int)WEAPON_RAMP_MS_DEFAULT);
+            uint8_t  curve  = (uint8_t) (doc["curve"]   | (int)WEAPON_CURVE_DEFAULT);
+            if (curve > 2) curve = 0;
+            Serial.printf("[Web] Weapon accel: ramp=%u ms, curve=%u\n", rampMs, curve);
+            if (_weaponAccelCallback) _weaponAccelCallback(rampMs, curve);
         }    }
 }

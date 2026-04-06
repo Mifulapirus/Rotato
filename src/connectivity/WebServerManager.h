@@ -38,6 +38,8 @@
 // These are function pointer types used to notify main.cpp when a command arrives.
 using DriveCallback       = std::function<void(float x, float y)>;
 using WeaponCallback      = std::function<void(bool active)>;
+using WeaponSpeedCallback = std::function<void(float speed)>;          // slider 0.0–1.0
+using WeaponAccelCallback = std::function<void(uint16_t rampMs, uint8_t curve)>;
 using SettingsCallback    = std::function<void(const String& ssid, const String& pass)>;
 using ForgetCallback      = std::function<void()>;
 using BleEnableCallback   = std::function<void(bool enabled)>;
@@ -45,6 +47,7 @@ using PwmRangeCallback    = std::function<void(uint16_t halfRangeUs)>;
 using RenameCallback      = std::function<void(const String& name)>;
 using ApPasswordCallback  = std::function<void(const String& pass)>;
 using BatteryCalibCallback = std::function<void(float ratio)>;
+using EscCalibrateCallback = std::function<void()>;  // Trigger full-range ESC calibration
 
 class WebServerManager {
 public:
@@ -58,6 +61,8 @@ public:
     // Call these before begin() to wire up the hardware.
     void onDrive(DriveCallback cb)             { _driveCallback = cb; }
     void onWeapon(WeaponCallback cb)           { _weaponCallback = cb; }
+    void onWeaponSpeed(WeaponSpeedCallback cb) { _weaponSpeedCallback = cb; }
+    void onWeaponAccel(WeaponAccelCallback cb) { _weaponAccelCallback = cb; }
     void onSettings(SettingsCallback cb)       { _settingsCallback = cb; }
     void onForget(ForgetCallback cb)           { _forgetCallback = cb; }
     void onBleEnable(BleEnableCallback cb)     { _bleEnableCallback = cb; }
@@ -65,12 +70,14 @@ public:
     void onRename(RenameCallback cb)           { _renameCallback = cb; }
     void onApPassword(ApPasswordCallback cb)   { _apPasswordCallback = cb; }
     void onBatteryCalib(BatteryCalibCallback cb) { _batteryCalibCallback = cb; }
+    void onEscCalibrate(EscCalibrateCallback cb) { _escCalibrateCallback = cb; }
 
     // Send a status JSON to all connected browser clients.
     // Call this periodically from loop() — e.g. every 500ms.
     void broadcastStatus(uint8_t batteryPercent, float batteryVoltage, float batteryRatio,
                          bool safetyOk, const String& ipAddress, bool weaponActive,
-                         const String& robotName);
+                         const String& robotName, bool escReady, const char* escCalib,
+                         uint8_t weaponSpeedPct);
 
     // WebSocket cleanup — must be called from loop()
     void update();
@@ -81,6 +88,8 @@ private:
 
     DriveCallback       _driveCallback;
     WeaponCallback      _weaponCallback;
+    WeaponSpeedCallback _weaponSpeedCallback;
+    WeaponAccelCallback _weaponAccelCallback;
     SettingsCallback    _settingsCallback;
     ForgetCallback      _forgetCallback;
     BleEnableCallback   _bleEnableCallback;
@@ -88,6 +97,7 @@ private:
     RenameCallback      _renameCallback;
     ApPasswordCallback  _apPasswordCallback;
     BatteryCalibCallback _batteryCalibCallback;
+    EscCalibrateCallback _escCalibrateCallback;
 
     // Handle incoming WebSocket messages
     void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);

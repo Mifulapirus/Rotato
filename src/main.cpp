@@ -187,6 +187,34 @@ void setup() {
         battery.setRatio(ratio);
     });
 
+    webServer.onEscCalibrate([]() {
+        if (!motors.isEscReady()) {
+            Serial.println("[Main] ESC calibration rejected — ESC still arming.");
+            return;
+        }
+        motors.startEscFullCalib();
+        buzzer.beepWeaponOn();  // audible cue that calibration started
+    });
+
+    webServer.onWeaponSpeed([](float speed) {
+        if (speed > 0.0f && !safety.isSafe()) {
+            Serial.println("[Main] Weapon speed blocked by safety switch!");
+            return;
+        }
+        motors.setWeaponSpeed(speed);
+        if (speed > 0.0f) {
+            robotState = RobotState::WEAPON_ACTIVE;
+        } else {
+            buzzer.beepWeaponOff();
+            robotState = RobotState::READY;
+        }
+    });
+
+    webServer.onWeaponAccel([](uint16_t rampMs, uint8_t curve) {
+        motors.setWeaponRamp(rampMs);
+        motors.setWeaponCurve(curve);
+    });
+
     webServer.begin();
 
     // ── 5. BLE ───────────────────────────────────────────────────────────────
@@ -232,6 +260,15 @@ void loop() {
         buzzer.beepError();
         robotState = RobotState::READY;
     }
+    // Safety switch during ESC calibration — abort calibration
+    if (motors.isEscCalibrating() && !safety.isSafe()) {
+        Serial.println("[Main] Safety switch triggered during ESC calibration — aborting.");
+        motors.stopAll();
+        buzzer.beepError();
+    }
+
+    // Advance ESC arming timer and calibration state machine
+    motors.updateEscState();
 
     // Battery ADC sample
     if (now - lastBatteryRead_ms >= WS_STATUS_INTERVAL_MS) {
@@ -248,7 +285,10 @@ void loop() {
             safety.isSafe(),
             wifi.getIPAddress(),
             motors.isWeaponActive(),
-            wifi.getRobotName()
+            wifi.getRobotName(),
+            motors.isEscReady(),
+            motors.escCalibStr(),
+            (uint8_t)(motors.getWeaponCurrentSpeed() * 100.0f)
         );
         ble.sendStatus(battery.getPercent(), safety.isSafe(), motors.isWeaponActive());
         lastStatusBroadcast_ms = now;

@@ -59,6 +59,37 @@
 #define PWM_WEAPON_IDLE_US  1000    // Weapon off (minimum pulse = ESC disarmed)
 #define PWM_WEAPON_FULL_US  2000    // Weapon full speed
 
+// ── Weapon ESC Initialization & Calibration ───────────────────────────────────
+//
+// RC ESCs require the PWM signal to sit at minimum throttle (PWM_WEAPON_IDLE_US)
+// at power-on for at least ESC_INIT_DELAY_MS before they will accept commands.
+// This mimics an RC transmitter joystick being held all the way down.
+// The weapon button is disabled in firmware and UI until this hold completes.
+//
+// Full-range calibration (user-triggered) teaches the ESC the signal endpoints:
+//   Step 1 — Hold maximum throttle (PWM_WEAPON_FULL_US) for ESC_CALIB_HIGH_MS
+//   Step 2 — Hold minimum throttle (PWM_WEAPON_IDLE_US) for ESC_CALIB_LOW_MS
+// Most ESCs beep to confirm each step. Always disconnect the motor first.
+//
+#define ESC_INIT_DELAY_MS    2000   // Hold minimum pulse at power-on (ms)
+#define ESC_CALIB_HIGH_MS    3000   // Full-range calibration: hold max throttle (ms)
+#define ESC_CALIB_LOW_MS     3000   // Full-range calibration: hold min throttle (ms)
+
+// ── Weapon speed & acceleration ───────────────────────────────────────────────
+//
+// Weapon speed is 0.0 (off) → 1.0 (full), mapped to PWM_WEAPON_IDLE_US–FULL_US.
+// The firmware ramps the PWM output at a configurable rate so the motor
+// accelerates/decelerates smoothly instead of jumping immediately.
+//
+// WEAPON_RAMP_MS_DEFAULT: time (ms) to sweep 0→100%. 0 = instant.
+// WEAPON_CURVE_DEFAULT  : output shaping applied after the ramp:
+//   0 = Linear    — constant step size throughout the sweep
+//   1 = Quadratic — x² : slow start, fast finish  (protects gear/belt at start)
+//   2 = S-Curve   — smoothstep: eases in AND out (gentlest for chain/belt drives)
+//
+#define WEAPON_RAMP_MS_DEFAULT   500   // ms for full 0→100% sweep
+#define WEAPON_CURVE_DEFAULT       0   // 0=linear, 1=quadratic, 2=s-curve
+
 // ── Drive pulse-width range (servo/ESC travel) ────────────────────────────────
 //
 // Standard ESCs respond to 1000–2000 µs (±500 µs from neutral 1500 µs).
@@ -78,10 +109,18 @@
 #define PWM_DRIVE_HALF_RANGE_US  500   // ±µs from neutral (default = standard 1000–2000)
 
 // LEDC channels assigned to each motor (ESP32 has up to 8 channels)
+// IMPORTANT — channel-to-timer mapping on ESP32 (arduino-esp32 v2.x):
+//   CH 0, 1 → Timer 0   CH 2, 3 → Timer 1   CH 4, 5 → Timer 2   CH 6, 7 → Timer 3
+// ledcWriteTone() reconfigures the ENTIRE timer, so motors and buzzer must
+// never share the same timer pair.
+//   Left  motor : CH 0 → Timer 0  ┐ drive pair — same timer is fine
+//   Right motor : CH 1 → Timer 0  ┘
+//   Weapon motor: CH 2 → Timer 1  — isolated, no other channel on Timer 1
+//   Buzzer      : CH 4 → Timer 2  — isolated, avoids corrupting weapon PWM
 #define LEDC_CH_LEFT_MOTOR    0
 #define LEDC_CH_RIGHT_MOTOR   1
 #define LEDC_CH_WEAPON_MOTOR  2
-#define LEDC_CH_BUZZER        3     // Only used if HAS_BUZZER is defined
+#define LEDC_CH_BUZZER        4     // Must NOT share Timer 1 with weapon (CH 2–3)
 
 // Motor direction flags — set to true if a motor spins the wrong way
 // (Common in differential drive: one motor is mounted mirrored)
@@ -97,7 +136,7 @@
 // ESP32-C3 ADC reference = ~2.45V (with internal attenuation calibration).
 // ADC is 12-bit: raw values 0–4095.
 //
-#define BATTERY_R_RATIO       3.0f  // Voltage divider multiplier (see above)
+#define BATTERY_R_RATIO       3.64f  // Voltage divider multiplier (see above)
 #define BATTERY_ADC_VREF      2.45f // ESP32-C3 ADC reference voltage (volts)
 #define BATTERY_ADC_BITS      4095  // 12-bit ADC max value
 #define BATTERY_VOLTAGE_FULL  8.4f  // 100% — 2S LiPo fully charged
@@ -113,7 +152,7 @@
 // automatically, so multiple robots in the same room won't conflict.
 //
 #define AP_SSID_PREFIX    "Rotato-"   // Final SSID will be e.g. "Rotato-A3F2"
-#define AP_PASSWORD       "rotato2026"  // Minimum 8 characters for WPA2
+#define AP_PASSWORD       "12345678"  // Minimum 8 characters for WPA2
 #define AP_IP_ADDRESS     "192.168.4.1" // Default ESP32 AP gateway address
 #define STA_CONNECT_TIMEOUT_MS 10000   // 10 seconds to try connecting to home WiFi
 

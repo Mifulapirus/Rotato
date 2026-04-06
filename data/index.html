@@ -34,7 +34,7 @@
       position: relative;
     }
     header h1 { font-size: 1.8rem; color: #e94560; letter-spacing: 2px; }
-    header p  { font-size: 0.8rem; color: #888; margin-top: 4px; }
+    header p  { font-size: 0.8rem; color: #aaa; margin-top: 4px; }
 
     /* ── Status Bar ─────────────────────────────────────────────────────── */
     #status-bar {
@@ -49,10 +49,10 @@
       gap: 12px;
     }
     .status-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .status-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+    .status-label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; }
 
     /* Battery bar */
-    #battery-wrap { width: 80px; }
+    #battery-wrap { width: auto; min-width: 80px; }
     #battery-bar-bg {
       height: 12px; background: #333; border-radius: 6px; overflow: hidden;
     }
@@ -60,7 +60,7 @@
       height: 100%; width: 0%; background: #4caf50;
       border-radius: 6px; transition: width 0.5s, background 0.5s;
     }
-    #battery-pct { font-size: 0.75rem; color: #aaa; text-align: center; }
+    #battery-pct { font-size: 0.72rem; color: #ccc; text-align: center; white-space: nowrap; }
 
     /* Safety indicator */
     #safety-dot {
@@ -78,7 +78,7 @@
     #conn-dot.connected { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
 
     /* IP address */
-    #ip-text { font-size: 0.75rem; color: #aaa; font-family: monospace; }
+    #ip-text { font-size: 0.75rem; color: #ccc; font-family: monospace; }
 
     /* ── Joystick ────────────────────────────────────────────────────────── */
     #joystick-container {
@@ -216,11 +216,25 @@
       flex: 1; padding: 10px 4px;
       background: none; border: none;
       border-bottom: 2px solid transparent;
-      color: #555; font-size: 0.8rem;
+      color: #888; font-size: 0.8rem;
       text-transform: uppercase; letter-spacing: 0.5px;
       cursor: pointer; transition: color 0.2s, border-color 0.2s;
     }
     .settings-tabs .tab.active { color: #e94560; border-bottom-color: #e94560; }
+
+    /* ── Tab scroll arrows (phone — shown by JS when tabs overflow) ────────── */
+    #settings-tabs-wrap { position: relative; flex-shrink: 0; }
+    .tabs-arrow {
+      display: none;
+      position: absolute; top: 0; bottom: 1px;
+      width: 28px; border: none; cursor: pointer;
+      color: #e94560; font-size: 1.3rem; line-height: 1;
+      z-index: 5; padding: 0;
+      align-items: center; justify-content: center;
+    }
+    .tabs-arrow-left  { left:  0; background: linear-gradient(to right, #16213e 70%, transparent); }
+    .tabs-arrow-right { right: 0; background: linear-gradient(to left,  #16213e 70%, transparent); }
+    .tabs-arrow.visible { display: flex; }
 
     /* ── Tab content ──────────────────────────────────────────────────────── */
     .tab-content {
@@ -231,8 +245,8 @@
 
     /* ── Setting rows ─────────────────────────────────────────────────────── */
     .setting-row { display: flex; flex-direction: column; gap: 8px; }
-    .setting-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-    .setting-desc  { font-size: 0.75rem; color: #555; line-height: 1.5; }
+    .setting-label { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+    .setting-desc  { font-size: 0.75rem; color: #999; line-height: 1.5; }
 
     /* ── Radio pills ──────────────────────────────────────────────────────── */
     .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -241,7 +255,7 @@
     .pill {
       display: block; padding: 8px 6px;
       background: #1a1a2e; border: 1px solid #333;
-      border-radius: 8px; color: #555;
+      border-radius: 8px; color: #888;
       font-size: 0.8rem; text-align: center;
       cursor: pointer; user-select: none;
       transition: border-color 0.2s, color 0.2s;
@@ -280,7 +294,7 @@
       width: 18px; height: 18px;
       border-radius: 50%; background: #e94560; cursor: pointer; border: none;
     }
-    .range-value { width: 3.2em; text-align: right; font-size: 0.8rem; color: #aaa; font-family: monospace; }
+    .range-value { width: 3.2em; text-align: right; font-size: 0.8rem; color: #ccc; font-family: monospace; }
 
     /* ── Settings form elements ───────────────────────────────────────────── */
     .settings-input {
@@ -329,7 +343,7 @@
     /* ── Version footer ───────────────────────────────────────────────── */
     #fw-version {
       font-size: 0.7rem;
-      color: #444;
+      color: #888;
       font-family: monospace;
       letter-spacing: 0.5px;
       padding-bottom: 4px;
@@ -422,6 +436,159 @@
     html[data-theme="light"] .settings-input        { background: #f4f5fb; border-color: #dde0ed; color: #1a1a2e; }
     html[data-theme="light"] .settings-input::placeholder { color: #bbb; }
     html[data-theme="light"] .s-btn-danger          { border-color: #dde0ed; color: #aaa; }
+    html[data-theme="light"] .tabs-arrow-left  { background: linear-gradient(to right, #fff 70%, transparent); }
+    html[data-theme="light"] .tabs-arrow-right { background: linear-gradient(to left,  #fff 70%, transparent); }
+
+    /* ── ESC calibration section ──────────────────────────────────────────── */
+    .esc-status-pill {
+      font-size: 0.82rem; font-family: monospace; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .esc-status-ok   { color: #4caf50; background: rgba(76,175,80,0.12); }
+    .esc-status-warn { color: #ffc107; background: rgba(255,193,7,0.12); }
+    .esc-calib-warn  { color: #e94560; font-weight: 600; }
+    .esc-calib-card {
+      background: #0e182e; border-radius: 10px; padding: 14px;
+      margin-top: 10px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .esc-calib-card-title {
+      font-size: 0.75rem; color: #aaa;
+      text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+    }
+    .esc-calib-steps {
+      font-size: 0.78rem; color: #aaa;
+      padding-left: 1.4em; line-height: 1.9; margin: 0;
+    }
+    .esc-calib-steps em { color: #e94560; font-style: normal; font-weight: 600; }
+    .esc-calib-status {
+      font-size: 0.82rem; font-family: monospace;
+      padding: 8px 10px; border-radius: 6px; background: #1a1a2e;
+    }
+    .esc-calib-btn-start { border-color: #e94560; color: #e94560; }
+    .esc-calib-btn-start:disabled { border-color: #444; color: #555; cursor: not-allowed; }
+    html[data-theme="light"] .esc-calib-card  { background: #e8eaf6; }
+    html[data-theme="light"] .esc-calib-steps { color: #555; }
+    html[data-theme="light"] .esc-calib-status { background: #f4f5fb; }
+
+    /* ── Weapon mode toggle (Button / Slider) ─────────────────────────────── */
+    .weapon-mode-toggle {
+      display: flex; gap: 0; border: 1px solid #333; border-radius: 8px;
+      overflow: hidden; width: 100%;
+    }
+    .weapon-mode-toggle button {
+      flex: 1; padding: 7px 4px;
+      background: none; border: none;
+      color: #555; font-size: 0.78rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .weapon-mode-toggle button.active { background: #e94560; color: #fff; }
+    .weapon-mode-toggle button:first-child { border-right: 1px solid #333; }
+
+    /* ── Weapon throttle slider ────────────────────────────────────────────── */
+    #weapon-slider-wrap {
+      display: none;            /* shown when mode = slider */
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    /* Vertical range slider via writing-mode — up = more throttle */
+    #weapon-slider {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 48px;
+      height: min(200px, calc(100vw - 120px));
+      background: #333;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      touch-action: none;
+    }
+    #weapon-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 48px; height: 32px;
+      border-radius: 8px;
+      background: #e94560; cursor: pointer;
+      box-shadow: 0 0 6px rgba(233,69,96,0.5);
+    }
+    #weapon-slider::-moz-range-thumb {
+      width: 48px; height: 32px;
+      border-radius: 8px;
+      background: #e94560; cursor: pointer; border: none;
+    }
+    #weapon-slider-pct {
+      font-size: 1.4rem; font-weight: 700; font-family: monospace;
+      color: #e94560; letter-spacing: 1px;
+    }
+    #weapon-speed-bar-wrap {
+      width: 100%; max-width: 200px;
+    }
+    #weapon-speed-bar-bg {
+      height: 6px; background: #333; border-radius: 3px; overflow: hidden;
+    }
+    #weapon-speed-bar {
+      height: 100%; width: 0%; background: #e94560;
+      border-radius: 3px; transition: width 0.3s;
+    }
+    #weapon-speed-label {
+      font-size: 0.7rem; color: #888; text-align: center; margin-top: 3px;
+    }
+
+    html[data-theme="light"] .weapon-mode-toggle        { border-color: #dde0ed; }
+    html[data-theme="light"] .weapon-mode-toggle button { color: #aaa; }
+    html[data-theme="light"] .weapon-mode-toggle button:first-child { border-right-color: #dde0ed; }
+    html[data-theme="light"] #weapon-slider { background: #d8d8e5; }
+
+    /* ── Phone: fit viewport, no scroll ──────────────────────────────────── */
+    @media (max-width: 767px) {
+      body {
+        height: 100svh;
+        min-height: unset;
+        overflow: hidden;
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+        gap: 8px;
+      }
+      header h1 { font-size: 1.4rem; }
+      header p  { display: none; }
+      #status-bar { padding: 8px 12px; }
+      #control-row { flex: 1; min-height: 0; gap: 8px; }
+      #joystick-container { flex: 1; min-height: 0; overflow: hidden; padding: 12px; }
+      #joystick-container h2 { display: none; }
+      #drive-values { display: none; }
+      #joystick-canvas {
+        width:  min(calc(100svh - 400px), calc(100vw - 80px));
+        height: min(calc(100svh - 400px), calc(100vw - 80px));
+      }
+      #weapon-container { padding: 12px; }
+      #fw-version { display: none; }
+      /* Weapon slider: horizontal orientation on phone */
+      #weapon-slider {
+        writing-mode: horizontal-tb;
+        direction: ltr;
+        width: 100%;
+        height: 72px;
+        flex: 1;
+      }
+      #weapon-slider::-webkit-slider-thumb { width: 32px; height: 68px; }
+      #weapon-slider::-moz-range-thumb     { width: 32px; height: 68px; border: none; }
+      #weapon-slider-wrap { flex-direction: row; align-items: center; gap: 12px; min-height: 140px; }
+      #weapon-slider-pct  { font-size: 1.1rem; min-width: 3.2em; text-align: right; flex-shrink: 0; }
+      /* Settings tabs: horizontally scrollable */
+      .settings-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        padding: 0 4px;
+      }
+      .settings-tabs::-webkit-scrollbar { display: none; }
+      .settings-tabs .tab { flex: 0 0 auto; padding: 10px 12px; min-width: 60px; }
+    }
   </style>
 </head>
 <body>
@@ -469,7 +636,26 @@
 
     <!-- ── Weapon ─────────────────────────────────────────────────────────── -->
     <div id="weapon-container">
+      <!-- Mode toggle: Button / Slider -->
+      <div class="weapon-mode-toggle">
+        <button id="weapon-mode-btn" class="active">Button</button>
+        <button id="weapon-mode-slider">Slider</button>
+      </div>
+
+      <!-- ON/OFF button (default mode) -->
       <button id="weapon-btn">WEAPON<br>OFF</button>
+
+      <!-- Throttle slider (slider mode) -->
+      <div id="weapon-slider-wrap">
+        <div id="weapon-slider-pct">0%</div>
+        <input type="range" id="weapon-slider" min="0" max="100" value="0" step="1">
+      </div>
+
+      <!-- Actual motor speed indicator (shown in both modes during ramp) -->
+      <div id="weapon-speed-bar-wrap">
+        <div id="weapon-speed-bar-bg"><div id="weapon-speed-bar"></div></div>
+        <div id="weapon-speed-label">Motor 0%</div>
+      </div>
     </div>
 
   </div>
@@ -487,13 +673,17 @@
           <button id="settings-close">✕</button>
         </div>
       </div>
-      <div class="settings-tabs">
-        <button class="tab active" data-tab="drive">Drive</button>
-        <button class="tab" data-tab="channels">Channels</button>
-        <button class="tab" data-tab="ble">BLE</button>
-        <button class="tab" data-tab="wifi">WiFi</button>
-        <button class="tab" data-tab="identity">Identity</button>
-        <button class="tab" data-tab="battery">Battery</button>
+      <div id="settings-tabs-wrap">
+        <button class="tabs-arrow tabs-arrow-left" id="tabs-left">&#8249;</button>
+        <div class="settings-tabs">
+          <button class="tab active" data-tab="drive">Drive</button>
+          <button class="tab" data-tab="channels">Channels</button>
+          <button class="tab" data-tab="ble">BLE</button>
+          <button class="tab" data-tab="wifi">WiFi</button>
+          <button class="tab" data-tab="identity">Identity</button>
+          <button class="tab" data-tab="battery">Battery</button>
+        </div>
+        <button class="tabs-arrow tabs-arrow-right" id="tabs-right">&#8250;</button>
       </div>
 
       <!-- ── Drive tab ────────────────────────────────────────────────── -->
@@ -556,6 +746,69 @@
           <input class="settings-input" type="text" id="ch-weapon-name" placeholder="Weapon Motor" maxlength="24">
         </div>
         <button class="s-btn-primary" id="channels-apply">Apply Labels</button>
+
+        <hr class="batt-calib-divider">
+
+        <!-- ── Weapon ESC Initialization status ───────────────────────── -->
+        <div class="setting-row">
+          <div class="setting-label">Weapon — ESC Status</div>
+          <div class="setting-desc">On power-on the firmware holds 1000 µs (minimum throttle) on the weapon channel for 2 seconds, arming the ESC. The weapon button is locked until arming completes.</div>
+          <div class="toggle-row" style="margin-top:8px">
+            <span class="setting-desc" style="margin:0">Boot arming</span>
+            <span id="esc-init-status" class="esc-status-pill esc-status-warn">● Connecting…</span>
+          </div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- ── ESC Full-Range Calibration ─────────────────────────────── -->
+        <div class="setting-row">
+          <div class="setting-label">ESC Range Calibration</div>
+          <div class="setting-desc esc-calib-warn">⚠ Disconnect the weapon motor before calibrating!</div>
+          <div class="setting-desc" style="margin-top:4px">Full-range calibration teaches the ESC the minimum and maximum signal endpoints. Most ESCs will beep to confirm each step.</div>
+          <div class="esc-calib-card">
+            <div class="esc-calib-card-title">Full Range (High → Low)</div>
+            <ol class="esc-calib-steps">
+              <li>Disconnect the weapon motor from the ESC</li>
+              <li>Press <em>Start</em> — max throttle (2000 µs) is output for 3 s</li>
+              <li>Controller automatically drops to min throttle (1000 µs) for 3 s</li>
+              <li>Reconnect the motor once calibration completes</li>
+            </ol>
+            <div id="esc-calib-status" class="esc-calib-status" style="display:none"></div>
+            <button id="esc-calib-btn" class="s-btn-danger esc-calib-btn-start" disabled>⚡ Start Full Range Calibration</button>
+          </div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- ── Weapon Acceleration ────────────────────────────────────────── -->
+        <div class="setting-row">
+          <div class="setting-label">Weapon — Acceleration</div>
+          <div class="setting-desc">Controls how quickly the weapon motor ramps up and down. Applies to both the ON/OFF button and the throttle slider.</div>
+          <div class="setting-row" style="margin-top:6px">
+            <div class="setting-label">Ramp Time</div>
+            <div class="radio-group">
+              <label><input type="radio" name="weapon-ramp" value="0"   ><span class="pill">Instant</span></label>
+              <label><input type="radio" name="weapon-ramp" value="250" ><span class="pill">Fast</span></label>
+              <label><input type="radio" name="weapon-ramp" value="500" checked><span class="pill">Medium</span></label>
+              <label><input type="radio" name="weapon-ramp" value="1000"><span class="pill">Slow</span></label>
+            </div>
+            <div class="range-row" style="margin-top:8px">
+              <input type="range" id="weapon-ramp-slider" min="0" max="3000" value="500" step="50">
+              <span class="range-value" id="weapon-ramp-val">500 ms</span>
+            </div>
+          </div>
+          <div class="setting-row" style="margin-top:6px">
+            <div class="setting-label">Acceleration Curve</div>
+            <div class="radio-group">
+              <label><input type="radio" name="weapon-curve" value="0" checked><span class="pill">Linear</span></label>
+              <label><input type="radio" name="weapon-curve" value="1"><span class="pill">Quadratic</span></label>
+              <label><input type="radio" name="weapon-curve" value="2"><span class="pill">S-Curve</span></label>
+            </div>
+            <div class="setting-desc" id="weapon-curve-desc" style="margin-top:4px">Constant acceleration throughout the sweep.</div>
+          </div>
+          <button class="s-btn-primary" id="weapon-accel-apply" style="margin-top:8px">Apply Acceleration</button>
+        </div>
       </div>
 
       <!-- ── BLE tab ──────────────────────────────────────────────────── -->
@@ -615,7 +868,7 @@
           <div class="setting-label">Robot Reading</div>
           <div style="display:flex;align-items:baseline;gap:10px">
             <div class="batt-live-voltage" id="batt-live-v">–.– V</div>
-            <div class="setting-desc" id="batt-live-ratio-disp">ratio: –</div>
+            <div class="setting-desc" id="batt-live-adc-disp">GPIO: – V</div>
           </div>
         </div>
 
@@ -690,6 +943,12 @@
       ws.onopen = () => {
         console.log('[WS] Connected');
         document.getElementById('conn-dot').classList.add('connected');
+        // Sync weapon acceleration settings to firmware on every (re)connect.
+        // The firmware may have NVS defaults that differ from the browser's
+        // localStorage — sending here ensures they always agree.
+        sendJSON({ type: 'weapon_accel',
+                   ramp_ms: appSettings.weaponRampMs,
+                   curve:   appSettings.weaponCurve });
       };
 
       ws.onclose = () => {
@@ -728,7 +987,9 @@
       bar.style.width = pct + '%';
       // Color: green > 40%, yellow > 20%, red <= 20%
       bar.style.background = pct > 40 ? '#4caf50' : pct > 20 ? '#ffc107' : '#e94560';
-      document.getElementById('battery-pct').textContent = pct + '%';
+      if (typeof data.batteryV !== 'undefined') _battVoltage = parseFloat(data.batteryV);
+      const _battVStr = _battVoltage !== null ? _battVoltage.toFixed(2) + 'V - ' : '';
+      document.getElementById('battery-pct').textContent = _battVStr + pct + '%';
 
       // Safety indicator
       const safetyDot = document.getElementById('safety-dot');
@@ -736,8 +997,14 @@
       safetyDot.classList.toggle('unsafe', !isSafe);
       safetyDot.title = isSafe ? 'Weapon allowed' : 'Safety switch blocking weapon';
 
-      // Safety warning text on weapon panel
-      document.getElementById('weapon-btn').disabled = !isSafe;
+      // Safety lock — disable both weapon controls when safety switch is tripped
+      document.getElementById('weapon-btn').disabled    = !isSafe;
+      document.getElementById('weapon-slider').disabled = !isSafe;
+      if (!isSafe) {
+        // Force weapon off on safety trip
+        document.getElementById('weapon-slider').value = 0;
+        document.getElementById('weapon-slider-pct').textContent = '0%';
+      }
 
       // IP address
       document.getElementById('ip-text').textContent = data.ip ?? '...';
@@ -761,9 +1028,19 @@
         updateWeaponButton();
       }
 
+      // Weapon speed bar (actual ramped output from firmware)
+      if (typeof data.weaponSpeed !== 'undefined') {
+        updateWeaponSpeedBar(data.weaponSpeed);
+      }
+
       // Battery calibration live display
       if (typeof data.batteryV !== 'undefined' && typeof data.batteryRatio !== 'undefined') {
         updateBattCalibDisplay(parseFloat(data.batteryV), parseFloat(data.batteryRatio));
+      }
+
+      // ESC arming / calibration status
+      if (typeof data.escReady !== 'undefined' || typeof data.escCalib !== 'undefined') {
+        updateEscStatus(data.escReady ?? false, data.escCalib ?? 'idle');
       }
     }
 
@@ -790,7 +1067,10 @@
       driveMode: 'arcade', speedLimit: 100, deadzone: 5,
       invertY: false, channelDrive: '', channelWeapon: '', bleEnabled: true,
       pwmRange: 500,   // half-range µs sent to firmware (default = standard 500)
-      theme: 'dark'
+      theme: 'dark',
+      weaponMode: 'button',   // 'button' | 'slider'
+      weaponRampMs: 500,      // 0–3000 ms
+      weaponCurve: 0          // 0=linear, 1=quadratic, 2=s-curve
     };
 
     function saveAppSettings() {
@@ -815,12 +1095,21 @@
       document.getElementById('pwm-range').value             = appSettings.pwmRange;
       document.getElementById('pwm-range-val').textContent   = appSettings.pwmRange + 'µs';
       _updatePwmRangeDesc(appSettings.pwmRange);
+      // Weapon acceleration
+      const rampRadio = document.querySelector(`input[name=weapon-ramp][value="${appSettings.weaponRampMs}"]`);
+      if (rampRadio) rampRadio.checked = true;
+      document.getElementById('weapon-ramp-slider').value    = appSettings.weaponRampMs;
+      document.getElementById('weapon-ramp-val').textContent = _rampLabel(appSettings.weaponRampMs);
+      const curveRadio = document.querySelector(`input[name=weapon-curve][value="${appSettings.weaponCurve}"]`);
+      if (curveRadio) curveRadio.checked = true;
+      document.getElementById('weapon-curve-desc').textContent = WEAPON_CURVE_DESCS[appSettings.weaponCurve] || '';
     }
 
     function loadAppSettings() {
       try { Object.assign(appSettings, JSON.parse(localStorage.getItem('rotato-settings') || '{}')); } catch(e) {}
       applyChannelNames();
       applyTheme();
+      applyWeaponMode(appSettings.weaponMode);
       syncSettingsControls();
     }
 
@@ -964,11 +1253,14 @@
 
     // ── Weapon button ──────────────────────────────────────────────────────────
     let weaponActive = false;
+    let _battVoltage = null;
 
     function updateWeaponButton() {
       const btn = document.getElementById('weapon-btn');
       btn.classList.toggle('active', weaponActive);
       btn.innerHTML = weaponActive ? 'WEAPON<br>ON' : 'WEAPON<br>OFF';
+      // Note: slider position is NOT synced here — it is owned exclusively by
+      // user interaction. Only the safety-switch reset and mode-switch zero it.
     }
 
     document.getElementById('weapon-btn').addEventListener('pointerdown', e => {
@@ -1015,8 +1307,23 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        tab.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+        setTimeout(updateTabArrows, 250);
       });
     });
+
+    // ── Tab row scroll arrows (phone) ─────────────────────────────────────────
+    function updateTabArrows() {
+      const tabsEl = document.querySelector('.settings-tabs');
+      const overflows = tabsEl.scrollWidth > tabsEl.clientWidth + 2;
+      document.getElementById('tabs-left').classList.toggle('visible',  overflows && tabsEl.scrollLeft > 4);
+      document.getElementById('tabs-right').classList.toggle('visible', overflows && tabsEl.scrollLeft < tabsEl.scrollWidth - tabsEl.clientWidth - 4);
+    }
+    document.querySelector('.settings-tabs').addEventListener('scroll', updateTabArrows, { passive: true });
+    window.addEventListener('resize', updateTabArrows);
+    document.getElementById('settings-btn').addEventListener('click', () => setTimeout(updateTabArrows, 60));
+    document.getElementById('tabs-left').addEventListener('click',  () => { document.querySelector('.settings-tabs').scrollBy({ left: -100, behavior: 'smooth' }); });
+    document.getElementById('tabs-right').addEventListener('click', () => { document.querySelector('.settings-tabs').scrollBy({ left:  100, behavior: 'smooth' }); });
 
     // Live range value display
     document.getElementById('speed-limit').addEventListener('input', function() {
@@ -1164,7 +1471,7 @@
       el.textContent = v.toFixed(2) + ' V';
       el.className   = 'batt-live-voltage' +
                        (v <= 6.2 ? ' crit' : v <= 7.0 ? ' warn' : '');
-      document.getElementById('batt-live-ratio-disp').textContent = 'ratio: ' + ratio.toFixed(4);
+      document.getElementById('batt-live-adc-disp').textContent = 'GPIO: ' + (ratio > 0 ? (v / ratio).toFixed(3) : '–') + ' V';
       // Only sync ratio controls when user has not taken manual control
       if (!_battDirty) {
         _setBattRatioControls(ratio);
@@ -1258,6 +1565,169 @@
       sendJSON({ type: 'battery_cal', ratio: parseFloat(ratio.toFixed(4)) });
       _battDirty = false;
       settingsOverlay.classList.remove('open');
+    });
+
+    // ── Weapon mode (Button / Slider) ──────────────────────────────────────────
+    const WEAPON_CURVE_DESCS = {
+      0: 'Constant acceleration throughout the sweep.',
+      1: 'Quadratic (x²) — slow start, fast finish. Gentle on startup.',
+      2: 'S-Curve (smoothstep) — eases in and out. Mildest for chain/belt drives.'
+    };
+
+    function _rampLabel(ms) {
+      return ms === 0 ? 'Instant' : ms + ' ms';
+    }
+
+    function applyWeaponMode(mode) {
+      const isSlider = mode === 'slider';
+      document.getElementById('weapon-btn').style.display          = isSlider ? 'none'  : '';
+      document.getElementById('weapon-slider-wrap').style.display  = isSlider ? 'flex'  : 'none';
+      document.getElementById('weapon-mode-btn').classList.toggle('active',    !isSlider);
+      document.getElementById('weapon-mode-slider').classList.toggle('active', isSlider);
+      // If switching away from slider, ramp weapon down
+      if (!isSlider && appSettings.weaponMode === 'slider') {
+        document.getElementById('weapon-slider').value = 0;
+        document.getElementById('weapon-slider-pct').textContent = '0%';
+        sendJSON({ type: 'weapon_speed', speed: 0 });
+      }
+      appSettings.weaponMode = mode;
+    }
+
+    document.getElementById('weapon-mode-btn').addEventListener('click', () => {
+      if (appSettings.weaponMode !== 'button') {
+        applyWeaponMode('button');
+        saveAppSettings();
+      }
+    });
+    document.getElementById('weapon-mode-slider').addEventListener('click', () => {
+      if (appSettings.weaponMode !== 'slider') {
+        applyWeaponMode('slider');
+        saveAppSettings();
+      }
+    });
+
+    // ── Weapon throttle slider ─────────────────────────────────────────────────
+    let _weaponSliderTimer = null;
+    document.getElementById('weapon-slider').addEventListener('input', function() {
+      const pct = parseInt(this.value);
+      document.getElementById('weapon-slider-pct').textContent = pct + '%';
+      // Safety: disable if safety switch is blocking
+      if (pct > 0 && document.getElementById('weapon-btn').disabled) {
+        this.value = 0;
+        document.getElementById('weapon-slider-pct').textContent = '0%';
+        return;
+      }
+      // Throttle sends to 50 ms to avoid flooding
+      if (_weaponSliderTimer) clearTimeout(_weaponSliderTimer);
+      _weaponSliderTimer = setTimeout(() => {
+        sendJSON({ type: 'weapon_speed', speed: pct / 100 });
+        // Keep weaponActive flag in sync for the button indicator only —
+        // do NOT call updateWeaponButton() here; that would snap the slider.
+        weaponActive = pct > 0;
+        const btn = document.getElementById('weapon-btn');
+        btn.classList.toggle('active', weaponActive);
+        btn.innerHTML = weaponActive ? 'WEAPON<br>ON' : 'WEAPON<br>OFF';
+      }, 30);
+    });
+
+    // ── Weapon motor speed bar ─────────────────────────────────────────────────
+    function updateWeaponSpeedBar(pct) {
+      document.getElementById('weapon-speed-bar').style.width = pct + '%';
+      document.getElementById('weapon-speed-label').textContent = 'Motor ' + pct + '%';
+    }
+
+    // ── Weapon acceleration settings ──────────────────────────────────────────
+    // Ramp preset pills sync the slider
+    document.querySelectorAll('input[name=weapon-ramp]').forEach(r => {
+      r.addEventListener('change', () => {
+        const ms = parseInt(r.value);
+        document.getElementById('weapon-ramp-slider').value    = ms;
+        document.getElementById('weapon-ramp-val').textContent = _rampLabel(ms);
+      });
+    });
+    // Manual ramp slider syncs back to nearest pill (or deselects all)
+    document.getElementById('weapon-ramp-slider').addEventListener('input', function() {
+      const ms    = parseInt(this.value);
+      document.getElementById('weapon-ramp-val').textContent = _rampLabel(ms);
+      document.querySelectorAll('input[name=weapon-ramp]').forEach(r => {
+        r.checked = (parseInt(r.value) === ms);
+      });
+    });
+    // Curve description
+    document.querySelectorAll('input[name=weapon-curve]').forEach(r => {
+      r.addEventListener('change', () => {
+        document.getElementById('weapon-curve-desc').textContent = WEAPON_CURVE_DESCS[r.value] || '';
+      });
+    });
+    // Apply
+    document.getElementById('weapon-accel-apply').addEventListener('click', () => {
+      const rampMs = parseInt(document.getElementById('weapon-ramp-slider').value);
+      const curveEl = document.querySelector('input[name=weapon-curve]:checked');
+      const curve   = curveEl ? parseInt(curveEl.value) : 0;
+      appSettings.weaponRampMs = rampMs;
+      appSettings.weaponCurve  = curve;
+      saveAppSettings();
+      sendJSON({ type: 'weapon_accel', ramp_ms: rampMs, curve: curve });
+      settingsOverlay.classList.remove('open');
+    });
+
+    // ── ESC calibration panel ──────────────────────────────────────────────────
+    //
+    // updateEscStatus() is called every time a status packet arrives from the robot.
+    // It reflects:
+    //   escReady  — false = ESC still running the 2-second boot hold
+    //   escCalib  — "idle" | "high" | "low" | "done"
+    function updateEscStatus(escReady, escCalib) {
+      const initEl     = document.getElementById('esc-init-status');
+      const calibEl    = document.getElementById('esc-calib-status');
+      const btn        = document.getElementById('esc-calib-btn');
+
+      // Boot arming pill
+      if (escReady) {
+        initEl.textContent = '● Ready';
+        initEl.className   = 'esc-status-pill esc-status-ok';
+      } else {
+        initEl.textContent = '● Arming…';
+        initEl.className   = 'esc-status-pill esc-status-warn';
+      }
+
+      // Calibration step feedback
+      btn.textContent = '⚡ Start Full Range Calibration';
+      switch (escCalib) {
+        case 'high':
+          calibEl.style.display = 'block';
+          calibEl.textContent   = '⚡ Step 1/2 — Maximum throttle (2000 µs)…  3 s';
+          calibEl.style.color   = '#ff6b35';
+          btn.disabled = true;
+          break;
+        case 'low':
+          calibEl.style.display = 'block';
+          calibEl.textContent   = '⬇ Step 2/2 — Minimum throttle (1000 µs)…  3 s';
+          calibEl.style.color   = '#ffc107';
+          btn.disabled = true;
+          break;
+        case 'done':
+          calibEl.style.display = 'block';
+          calibEl.textContent   = '✓ Calibration complete! Reconnect the motor.';
+          calibEl.style.color   = '#4caf50';
+          btn.disabled = !escReady;
+          break;
+        default: // 'idle'
+          calibEl.style.display = 'none';
+          btn.disabled = !escReady;
+          break;
+      }
+    }
+
+    document.getElementById('esc-calib-btn').addEventListener('click', () => {
+      if (!confirm(
+        'Start ESC full-range calibration?\n\n' +
+        '⚠ Make sure the weapon motor is DISCONNECTED.\n\n' +
+        'The ESC will receive maximum throttle (2000 µs) for 3 seconds, ' +
+        'then minimum throttle (1000 µs) for 3 seconds. ' +
+        'Most ESCs will beep to confirm each step.'
+      )) return;
+      sendJSON({ type: 'esc_calibrate' });
     });
 
     // Restore persisted settings on page load
