@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+src/web_ui_html.h
+src/version_build.h
+bin/
+*.bin

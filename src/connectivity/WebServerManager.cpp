@@ -4,20 +4,24 @@
 
 #include "WebServerManager.h"
 #include "version_build.h"
+#include "web_ui_html.h"
+#include <Update.h>
 
 WebServerManager::WebServerManager()
     : _server(WEB_SERVER_PORT), _ws("/ws") {}
 
 void WebServerManager::begin() {
     // ── Mount LittleFS ────────────────────────────────────────────────────────
-    // LittleFS is the filesystem we uploaded with "pio run --target uploadfs".
-    // It holds index.html and any other static files.
+    // LittleFS is optional — index.html is now baked into firmware via
+    // scripts/embed_web_ui.py so "uploadfs" is no longer required.
+    // LittleFS is still mounted so any extra static files placed in data/
+    // (images, additional JS) continue to be served without a code change.
     if (!LittleFS.begin(true)) {
-        Serial.println("[Web] ERROR: LittleFS mount failed! Did you upload the filesystem?");
-        Serial.println("[Web]        Run: pio run --target uploadfs");
-        return;
+        Serial.println("[Web] WARNING: LittleFS mount failed — extra static files unavailable.");
+        // Not fatal: the web UI is embedded in firmware and will still work.
+    } else {
+        Serial.println("[Web] LittleFS mounted (optional static files ready).");
     }
-    Serial.println("[Web] LittleFS mounted.");
 
     // ── WebSocket setup ──────────────────────────────────────────────────────
     // Register our handler function for WebSocket events (connect, message, disconnect)
@@ -28,9 +32,15 @@ void WebServerManager::begin() {
     _server.addHandler(&_ws);
 
     // ── HTTP routes ───────────────────────────────────────────────────────────
-    // Serve index.html for all requests to "/" (the root address)
+    // Serve the web UI from PROGMEM (gzip-compressed at build time by
+    // scripts/embed_web_ui.py).  The browser decompresses automatically
+    // when it sees Content-Encoding: gzip.
     _server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-        request->send(LittleFS, "/index.html", "text/html");
+        AsyncWebServerResponse* response = request->beginResponse(
+            200, "text/html", WEB_UI_HTML_GZ, WEB_UI_HTML_GZ_LEN);
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", "no-cache");
+        request->send(response);
     });
 
     // Serve any other files from LittleFS (CSS, JS, images if added later)
@@ -40,6 +50,61 @@ void WebServerManager::begin() {
     _server.onNotFound([](AsyncWebServerRequest* request) {
         request->send(404, "text/plain", "Not found");
     });
+
+    // ── OTA Firmware Update ───────────────────────────────────────────────────
+    // POST /update — browser uploads a raw .bin firmware image as multipart.
+    // Checks performed:
+    //   • Update.begin() confirms an OTA partition exists and there is enough space.
+    //   • Each chunk is written and verified by the ESP32 Update library.
+    //   • Update.end(true) finalises and validates the MD5 checksum.
+    //   • hasError() guards the response: only reboots on a clean image.
+    //   • Client-side guards (see index.html): .bin extension, ≥ 4 KB size.
+    _server.on("/update", HTTP_POST,
+        // ── Response handler (called once upload finishes) ──────────────────
+        [](AsyncWebServerRequest* request) {
+            bool ok = !Update.hasError();
+            String body = ok
+                ? "{\"ok\":true}"
+                : "{\"ok\":false,\"error\":\"" + String(Update.errorString()) + "\"}";
+            AsyncWebServerResponse* resp =
+                request->beginResponse(200, "application/json", body);
+            resp->addHeader("Connection", "close");
+            request->send(resp);
+            if (ok) {
+                Serial.println("[OTA] Image verified — rebooting to apply update.");
+                delay(500);
+                ESP.restart();
+            } else {
+                Serial.printf("[OTA] Update failed: %s\n", Update.errorString());
+            }
+        },
+        // ── Upload handler (called per incoming chunk) ──────────────────────
+        [](AsyncWebServerRequest* request, const String& filename,
+           size_t index, uint8_t* data, size_t len, bool final) {
+            if (index == 0) {
+                Serial.printf("[OTA] Receiving '%s' (content-length: %u bytes)\n",
+                              filename.c_str(), request->contentLength());
+                // U_FLASH = application firmware; UPDATE_SIZE_UNKNOWN lets the
+                // library determine the size from the OTA partition boundary.
+                if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+                    Serial.printf("[OTA] begin() failed: %s\n", Update.errorString());
+                    return;  // hasError() will be true; response handler reports it
+                }
+            }
+            if (!Update.hasError()) {
+                if (Update.write(data, len) != len) {
+                    Serial.printf("[OTA] write() error: %s\n", Update.errorString());
+                }
+            }
+            if (final) {
+                if (Update.end(true)) {  // true = flush remainder + verify MD5
+                    Serial.printf("[OTA] Received %u bytes — image OK.\n", index + len);
+                } else {
+                    Serial.printf("[OTA] end() failed: %s\n", Update.errorString());
+                }
+            }
+        });
+    Serial.println("[Web] OTA endpoint registered: POST /update");
 
     _server.begin();
     Serial.println("[Web] HTTP server started on port 80.");

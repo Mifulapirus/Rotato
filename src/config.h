@@ -125,7 +125,7 @@
 // Motor direction flags — set to true if a motor spins the wrong way
 // (Common in differential drive: one motor is mounted mirrored)
 #define MOTOR_LEFT_REVERSED   false
-#define MOTOR_RIGHT_REVERSED  false
+#define MOTOR_RIGHT_REVERSED  true
 
 // ── Battery Monitor ───────────────────────────────────────────────────────────
 //

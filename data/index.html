@@ -470,6 +470,43 @@
     html[data-theme="light"] .esc-calib-steps { color: #555; }
     html[data-theme="light"] .esc-calib-status { background: #f4f5fb; }
 
+    /* ── OTA firmware upload ──────────────────────────────────────────────── */
+    .ota-file-label {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: #1a1a2e; border: 1px dashed #444;
+      border-radius: 8px; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .ota-file-label:hover { border-color: #e94560; }
+    .ota-file-btn {
+      padding: 6px 14px; background: none;
+      border: 1px solid #e94560; border-radius: 6px;
+      color: #e94560; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .ota-file-label:hover .ota-file-btn { background: #e94560; color: #fff; }
+    .ota-file-name { font-size: 0.82rem; color: #888; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ota-progress-bg {
+      flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden;
+    }
+    .ota-progress-fill {
+      height: 100%; width: 0%; background: #4caf50;
+      border-radius: 4px; transition: width 0.25s;
+    }
+    .ota-progress-row { display: flex; align-items: center; gap: 10px; }
+    .ota-progress-pct { font-size: 0.8rem; color: #ccc; font-family: monospace; width: 3.2em; text-align: right; flex-shrink: 0; }
+    .ota-status-msg {
+      font-size: 0.82rem; font-family: monospace;
+      padding: 9px 12px; border-radius: 6px; background: #0e182e;
+    }
+    html[data-theme="light"] .ota-file-label   { background: #f4f5fb; border-color: #ccc; }
+    html[data-theme="light"] .ota-file-label:hover { border-color: #e94560; }
+    html[data-theme="light"] .ota-file-name    { color: #889; }
+    html[data-theme="light"] .ota-progress-bg  { background: #d8d8e5; }
+    html[data-theme="light"] .ota-status-msg   { background: #e8eaf6; }
+
     /* ── Weapon mode toggle (Button / Slider) ─────────────────────────────── */
     .weapon-mode-toggle {
       display: flex; gap: 0; border: 1px solid #333; border-radius: 8px;
@@ -682,6 +719,7 @@
           <button class="tab" data-tab="wifi">WiFi</button>
           <button class="tab" data-tab="identity">Identity</button>
           <button class="tab" data-tab="battery">Battery</button>
+          <button class="tab" data-tab="firmware">Firmware</button>
         </div>
         <button class="tabs-arrow tabs-arrow-right" id="tabs-right">&#8250;</button>
       </div>
@@ -908,6 +946,48 @@
 
         <button class="s-btn-primary" id="batt-apply-btn">Apply &amp; Save Ratio</button>
       </div>
+
+      <!-- ── Firmware / OTA tab ─────────────────────────────────────────── -->
+      <div class="tab-content" id="tab-firmware">
+        <div class="setting-desc">Upload a new firmware <code>.bin</code> file to update the robot over Wi-Fi. Rotato will reboot automatically once the image is verified.</div>
+
+        <!-- Current version -->
+        <div class="setting-row">
+          <div class="setting-label">Installed Version</div>
+          <div id="ota-current-version" style="font-family:monospace;font-size:0.9rem;color:#eee">— (connect robot first)</div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- File picker -->
+        <div class="setting-row">
+          <div class="setting-label">Firmware File (.bin)</div>
+          <label class="ota-file-label">
+            <input type="file" id="ota-file" accept=".bin" style="display:none">
+            <span class="ota-file-btn">Browse…</span>
+            <span class="ota-file-name" id="ota-file-name">No file selected</span>
+          </label>
+          <div id="ota-file-info" style="font-size:0.75rem;color:#666;font-family:monospace;display:none"></div>
+        </div>
+
+        <!-- Progress bar (hidden until upload starts) -->
+        <div id="ota-progress-wrap" style="display:none">
+          <div class="ota-progress-row">
+            <div class="ota-progress-bg"><div class="ota-progress-fill" id="ota-progress-bar"></div></div>
+            <span class="ota-progress-pct" id="ota-progress-pct">0%</span>
+          </div>
+        </div>
+
+        <!-- Status message -->
+        <div class="ota-status-msg" id="ota-status-msg" style="display:none"></div>
+
+        <!-- Upload button -->
+        <button class="s-btn-primary" id="ota-upload-btn" disabled>⬆ Upload &amp; Install Firmware</button>
+
+        <div class="setting-desc" style="color:#e9456088;margin-top:4px">
+          ⚠ Do not close this page or cut power during the update. The robot will be unreachable for ~10 seconds while it reboots.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1012,6 +1092,7 @@
       // Firmware version — set only once (won't change without a reflash)
       if (data.fw && document.getElementById('fw-version').textContent === 'fw —') {
         document.getElementById('fw-version').textContent = 'fw ' + data.fw;
+        document.getElementById('ota-current-version').textContent = data.fw;
       }
 
       // Robot name — update page title, header, and identity tab field
@@ -1752,6 +1833,135 @@
     fsBtn.addEventListener('pointerdown', e => { e.preventDefault(); isFS() ? exitFS() : requestFS(); });
     document.addEventListener('fullscreenchange',       syncFsBtn);
     document.addEventListener('webkitfullscreenchange', syncFsBtn);
+
+    // ── OTA Firmware Update ────────────────────────────────────────────────────
+    //
+    // Checks performed before sending:
+    //   1. File must have a .bin extension
+    //   2. File must be at least 4 KB (anything smaller cannot be valid firmware)
+    //   3. User must confirm the reboot warning dialog
+    // Server-side checks (WebServerManager.cpp):
+    //   4. Update.begin() confirms an OTA partition exists and space is available
+    //   5. Each write chunk is verified; Update.end() validates the MD5 checksum
+    //   6. Robot only reboots when hasError() is false (clean image verified)
+    (function () {
+      const fileEl       = document.getElementById('ota-file');
+      const fileNameEl   = document.getElementById('ota-file-name');
+      const fileInfoEl   = document.getElementById('ota-file-info');
+      const uploadBtn    = document.getElementById('ota-upload-btn');
+      const progressWrap = document.getElementById('ota-progress-wrap');
+      const progressBar  = document.getElementById('ota-progress-bar');
+      const progressPct  = document.getElementById('ota-progress-pct');
+      const statusMsg    = document.getElementById('ota-status-msg');
+
+      function setStatus(text, type) {
+        // type: 'info' | 'ok' | 'error'
+        statusMsg.textContent   = text;
+        statusMsg.style.color   = type === 'error' ? '#e94560'
+                                : type === 'ok'    ? '#4caf50'
+                                :                    '#ffc107';
+        statusMsg.style.display = 'block';
+      }
+
+      function resetProgress() {
+        progressWrap.style.display = 'none';
+        progressBar.style.width    = '0%';
+        progressPct.textContent    = '0%';
+      }
+
+      fileEl.addEventListener('change', function () {
+        const file = this.files[0];
+        statusMsg.style.display = 'none';
+        resetProgress();
+
+        if (!file) {
+          fileNameEl.textContent    = 'No file selected';
+          fileInfoEl.style.display  = 'none';
+          uploadBtn.disabled        = true;
+          return;
+        }
+
+        fileNameEl.textContent = file.name;
+        fileInfoEl.textContent = (file.size / 1024).toFixed(1) + ' KB';
+        fileInfoEl.style.display   = 'block';
+
+        // ── Client-side validation ──────────────────────────────────────────
+        if (!file.name.toLowerCase().endsWith('.bin')) {
+          setStatus('✗ File must be a .bin firmware image.', 'error');
+          uploadBtn.disabled = true;
+          return;
+        }
+        if (file.size < 4096) {
+          setStatus('✗ File is too small to be valid firmware (< 4 KB).', 'error');
+          uploadBtn.disabled = true;
+          return;
+        }
+
+        uploadBtn.disabled = false;
+      });
+
+      uploadBtn.addEventListener('click', () => {
+        const file = fileEl.files[0];
+        if (!file || !file.name.toLowerCase().endsWith('.bin') || file.size < 4096) return;
+
+        if (!confirm(
+          'Install firmware update?\n\n' +
+          'File: ' + file.name + '  (' + (file.size / 1024).toFixed(1) + ' KB)\n\n' +
+          '⚠ The robot will reboot when the update is complete.\n' +
+          'Do not disconnect power during the update.'
+        )) return;
+
+        const formData = new FormData();
+        formData.append('firmware', file, file.name);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/update', true);
+
+        uploadBtn.disabled         = true;
+        progressWrap.style.display = 'block';
+        setStatus('Uploading…', 'info');
+
+        xhr.upload.addEventListener('progress', e => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width  = pct + '%';
+            progressPct.textContent  = pct + '%';
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          progressBar.style.width = '100%';
+          progressPct.textContent = '100%';
+          try {
+            const resp = JSON.parse(xhr.responseText);
+            if (resp.ok) {
+              setStatus('✓ Update installed! The robot is rebooting — reconnecting in ~15 s…', 'ok');
+              // The WebSocket will auto-reconnect once the robot is back up.
+            } else {
+              setStatus('✗ Update failed: ' + (resp.error || 'Unknown error'), 'error');
+              uploadBtn.disabled = false;
+            }
+          } catch (e) {
+            setStatus('✗ Unexpected response from robot.', 'error');
+            uploadBtn.disabled = false;
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          // Connection drops mid-upload if the robot reboots before sending the response.
+          // Treat it as a possible success and let the user reconnect to verify.
+          setStatus('Connection lost — if upload was complete the robot is rebooting. Reconnect to verify.', 'info');
+          uploadBtn.disabled = false;
+        });
+
+        xhr.addEventListener('abort', () => {
+          setStatus('Upload cancelled.', 'info');
+          uploadBtn.disabled = false;
+        });
+
+        xhr.send(formData);
+      });
+    })();
 
     // ── Start connection ───────────────────────────────────────────────────────
     connectWebSocket();

@@ -26,7 +26,9 @@ void WiFiManager::begin() {
     _defaultName = buildSSID();  // hardware-derived "Rotato-XXXX", invariant
 
     // Load custom name + AP password from NVS (fall back to defaults if not set)
-    _prefs.begin(NVS_NAMESPACE, true);
+    // Open read-write so the namespace is created on the very first boot;
+    // read-only (true) would fail with NOT_FOUND on a blank NVS partition.
+    _prefs.begin(NVS_NAMESPACE, false);
     String customName = _prefs.getString(NVS_KEY_NAME, "");
     _apPassword = _prefs.getString(NVS_KEY_AP_PASS, AP_PASSWORD);
     _prefs.end();
@@ -73,7 +75,7 @@ String WiFiManager::getIPAddress() const {
 // ── Private methods ────────────────────────────────────────────────────────────
 
 bool WiFiManager::connectToSavedNetwork() {
-    _prefs.begin(NVS_NAMESPACE, true);  // true = read-only mode
+    _prefs.begin(NVS_NAMESPACE, false);  // false = read-write (creates namespace on first boot)
     String ssid = _prefs.getString(NVS_KEY_SSID, "");
     String pass = _prefs.getString(NVS_KEY_PASS, "");
     _prefs.end();

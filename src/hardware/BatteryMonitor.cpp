@@ -9,7 +9,9 @@ static const char* BATT_NVS_RATIO = "r_ratio";
 
 void BatteryMonitor::begin() {
     // Load saved calibration ratio (or fall back to compiled-in default)
-    _prefs.begin(BATT_NVS_NS, true);
+    // Open read-write so the namespace is created on the very first boot;
+    // read-only (true) would fail with NOT_FOUND on a blank NVS partition.
+    _prefs.begin(BATT_NVS_NS, false);
     _rRatio = _prefs.getFloat(BATT_NVS_RATIO, BATTERY_R_RATIO);
     _prefs.end();
     Serial.printf("[Battery] Using ratio: %.4f\n", _rRatio);
