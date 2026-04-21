@@ -92,7 +92,7 @@ void setup() {
     Serial.println();
     Serial.println("\n========================================");
     Serial.println("  Rotato Robot Controller");
-    Serial.println("  Weaponized Plastic — 2026");
+    Serial.println("  Weaponized Plastic - 2026");
     Serial.println("========================================\n");
     Serial.println("[Boot] Serial OK");
     Serial.printf("[Boot] Firmware v%s  (built %s %s)\n", FW_VERSION_FULL, FW_BUILD_DATE, FW_BUILD_TIME);
@@ -102,7 +102,7 @@ void setup() {
         static const char* const FM_NAMES[] = { "QIO","QOUT","DIO","DOUT","Fast","Slow" };
         uint8_t  fm  = (uint8_t)ESP.getFlashChipMode();
         uint64_t mac = ESP.getEfuseMac();
-        Serial.println("[Boot] ────────────────────────────────────────");
+        Serial.println("[Boot] ----------------------------------------");
         Serial.printf( "[Boot]  Chip        : %s  rev %u  (%u core)\n",
                         ESP.getChipModel(), ESP.getChipRevision(), ESP.getChipCores());
         Serial.printf( "[Boot]  CPU Freq    : %u MHz\n",      ESP.getCpuFreqMHz());
@@ -116,7 +116,7 @@ void setup() {
         Serial.printf( "[Boot]  MAC (base)  : %02X:%02X:%02X:%02X:%02X:%02X\n",
                         (uint8_t)(mac),       (uint8_t)(mac >> 8),  (uint8_t)(mac >> 16),
                         (uint8_t)(mac >> 24), (uint8_t)(mac >> 32), (uint8_t)(mac >> 40));
-        Serial.println("[Boot] ────────────────────────────────────────");
+        Serial.println("[Boot] ----------------------------------------");
     }
 
     // ── 2. Hardware drivers ──────────────────────────────────────────────────

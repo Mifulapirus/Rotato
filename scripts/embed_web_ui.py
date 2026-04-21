@@ -15,7 +15,7 @@ Import("env")  # noqa: F821 — injected by SCons/PlatformIO
 project_dir = env.subst("$PROJECT_DIR")  # noqa: F821
 src_dir     = env.subst("$PROJECT_SRC_DIR")  # noqa: F821
 
-html_path = os.path.join(project_dir, "data", "index.html")
+html_path = os.path.join(project_dir, "ui", "index.html")
 out_path  = os.path.join(src_dir, "web_ui_html.h")
 
 if not os.path.exists(html_path):

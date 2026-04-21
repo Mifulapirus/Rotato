@@ -79,11 +79,15 @@ void WebServerManager::begin() {
             }
         },
         // ── Upload handler (called per incoming chunk) ──────────────────────
-        [](AsyncWebServerRequest* request, const String& filename,
+        [this](AsyncWebServerRequest* request, const String& filename,
            size_t index, uint8_t* data, size_t len, bool final) {
             if (index == 0) {
                 Serial.printf("[OTA] Receiving '%s' (content-length: %u bytes)\n",
                               filename.c_str(), request->contentLength());
+                // Close all WebSocket clients before allocating the OTA buffer
+                // so their heap is reclaimed before Update.begin() runs.
+                _ws.closeAll();
+                _ws.cleanupClients();
                 // U_FLASH = application firmware; UPDATE_SIZE_UNKNOWN lets the
                 // library determine the size from the OTA partition boundary.
                 if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {

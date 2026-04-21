@@ -5,7 +5,7 @@
 #define FW_VERSION_MAJOR   0
 #define FW_VERSION_MINOR   1
 #define FW_VERSION_PATCH   0
-#define FW_BUILD_NUMBER    213
-#define FW_BUILD_DATE      "2026-04-18"
-#define FW_BUILD_TIME      "13:37:13"
-#define FW_VERSION_FULL    "0.1.0.213"
+#define FW_BUILD_NUMBER    224
+#define FW_BUILD_DATE      "2026-04-20"
+#define FW_BUILD_TIME      "18:44:08"
+#define FW_VERSION_FULL    "0.1.0.224"

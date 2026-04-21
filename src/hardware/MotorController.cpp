@@ -96,7 +96,7 @@ void MotorController::setDrive(float x, float y) {
     writeDuty(LEDC_CH_LEFT_MOTOR,  speedToDuty(leftSpeed,  MOTOR_LEFT_REVERSED));
     writeDuty(LEDC_CH_RIGHT_MOTOR, speedToDuty(rightSpeed, MOTOR_RIGHT_REVERSED));
 
-    Serial.printf("[Motors] Drive x=%.2f y=%.2f → L=%.2f R=%.2f\n",
+    Serial.printf("[Motors] Drive x=%.2f y=%.2f -> L=%.2f R=%.2f\n",
                   x, y, leftSpeed, rightSpeed);
 }
 

@@ -341,13 +341,19 @@
     html[data-theme="light"] .batt-calib-divider     { border-color: #e0e3f0; }
 
     /* ── Version footer ───────────────────────────────────────────────── */
-    #fw-version {
+    #fw-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 0.7rem;
       color: #888;
       font-family: monospace;
       letter-spacing: 0.5px;
       padding-bottom: 4px;
     }
+    #fw-line .fw-sep { color: #555; }
+    #fw-line a { color: #888; text-decoration: none; }
+    #fw-line a:hover { color: #aaa; text-decoration: underline; }
 
     /* ── Fullscreen Button ──────────────────────────────────────────────── */
     #fullscreen-btn {
@@ -391,7 +397,7 @@
 
     /* ── Desktop layout (>= 768 px) ────────────────────────────────────────── */
     @media (min-width: 768px) {
-      header, #status-bar, #control-row, #fw-version { max-width: 1100px; }
+      header, #status-bar, #control-row, #fw-line { max-width: 1100px; }
       #control-row    { flex-direction: row; align-items: stretch; }
       #joystick-container { flex: 1; max-width: none; }
       #weapon-container   { width: 220px; max-width: 220px; flex-shrink: 0; justify-content: center; }
@@ -417,7 +423,8 @@
     html[data-theme="light"] #weapon-btn            { background: #fff; color: #e94560; }
     html[data-theme="light"] #weapon-btn.active     { background: #e94560; color: #fff; }
     html[data-theme="light"] #settings-btn          { color: #aaa; }
-    html[data-theme="light"] #fw-version            { color: #ccc; }
+    html[data-theme="light"] #fw-line              { color: #bbb; }
+    html[data-theme="light"] #fw-line a             { color: #bbb; }
     html[data-theme="light"] #fullscreen-btn        { border-color: #dde0ed; color: #aaa; }
     html[data-theme="light"] #settings-panel        { background: #fff; border-radius: 20px; }
     html[data-theme="light"] .settings-header span   { color: #e94560; }
@@ -602,7 +609,7 @@
         height: min(calc(100svh - 400px), calc(100vw - 80px));
       }
       #weapon-container { padding: 12px; }
-      #fw-version { display: none; }
+      #fw-line { display: none; }
       /* Weapon slider: horizontal orientation on phone */
       #weapon-slider {
         writing-mode: horizontal-tb;
@@ -633,7 +640,7 @@
   <!-- ── Header ──────────────────────────────────────────────────────────── -->
   <header>
     <h1>ROTATO</h1>
-    <p>Robot Controller — Asmbly Workshop 2026</p>
+    <p>WPFL Asmbly 2026</p>
     <button id="fullscreen-btn" title="Enter fullscreen">&#x26F6;</button>
   </header>
 
@@ -698,7 +705,7 @@
   </div>
 
   <!-- ── Firmware version ────────────────────────────────────────────────────── -->
-  <div id="fw-version">fw —</div>
+  <div id="fw-line"><span id="fw-version">fw —</span><span class="fw-sep">|</span><span>made by <a href="https://www.thehomelab.dev" target="_blank" rel="noopener noreferrer">www.thehomelab.dev</a></span></div>
 
   <!-- ── Settings Panel ───────────────────────────────────────────────────── -->
   <div id="settings-overlay">
