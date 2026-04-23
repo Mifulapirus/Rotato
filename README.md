@@ -1,7 +1,22 @@
-# Rotato Robot Controller — Student Guide
+<div align="center">
 
-**Author:** Angel Hernandez | [angel@thehomelab.dev](mailto:angel@thehomelab.dev) | [www.thehomelab.dev](https://www.thehomelab.dev)
-**GitHub:** [Democratic-Robot / Democratic Robot 2026](https://github.com/Mifulapirus/Democratic-Robot/tree/main/Democratic%20Robot%202026)
+<img src="assets/rotato-logo.png" alt="Rotato — Spin. Smash. Repeat." width="400"/>
+
+# Rotato
+
+### Spin. Smash. Repeat.
+
+*A combat-style workshop robot built at [Asmbly](https://asmbly.org) — controlled from your browser, no app required.*
+
+[![PlatformIO](https://img.shields.io/badge/built%20with-PlatformIO-orange?logo=platformio)](https://platformio.org)
+[![ESP32-C3](https://img.shields.io/badge/MCU-ESP32--C3-blue?logo=espressif)](https://www.espressif.com/en/products/socs/esp32-c3)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+**Author:** Angel Hernandez — [angel@thehomelab.dev](mailto:angel@thehomelab.dev) · [thehomelab.dev](https://www.thehomelab.dev)
+
+</div>
+
+---
 
 > **AI Assistants (GitHub Copilot, Claude, etc.):** Read [`AI_CONTEXT.md`](AI_CONTEXT.md) instead — it contains the lean technical reference optimized for code generation.
 
