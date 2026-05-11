@@ -116,10 +116,11 @@ void WebServerManager::begin() {
 }
 
 void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVoltage,
-                                       float batteryRatio, bool safetyOk,
-                                       const String& ipAddress, bool weaponActive,
-                                       const String& robotName, bool escReady,
-                                       const char* escCalib, uint8_t weaponSpeedPct) {
+                                       float batteryRatio, uint8_t batteryCells,
+                                       bool safetyOk, const String& ipAddress,
+                                       bool weaponActive, const String& robotName,
+                                       bool escReady, const char* escCalib,
+                                       uint8_t weaponSpeedPct) {
     if (_ws.count() == 0) return;  // No clients — skip
 
     // Build JSON status message
@@ -127,6 +128,7 @@ void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVolt
     doc["battery"]        = batteryPercent;
     doc["batteryV"]       = batteryVoltage;
     doc["batteryRatio"]   = batteryRatio;
+    doc["batteryCells"]   = batteryCells;
     doc["safety"]         = safetyOk;
     doc["ip"]             = ipAddress;
     doc["weapon"]         = weaponActive;
@@ -275,8 +277,16 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             }
             Serial.printf("[Web] Battery calibration: new ratio = %.4f\n", ratio);
             if (_batteryCalibCallback) _batteryCalibCallback(ratio);
-        }
-        // ── ESC full-range calibration: {"type":"esc_calibrate"} ─────────────
+        }        // ── Battery cell count: {"type":"battery_cells","cells":2} ────────────────
+        else if (strcmp(type, "battery_cells") == 0) {
+            uint8_t cells = (uint8_t)(doc["cells"] | 0);
+            if (cells != 2 && cells != 3) {
+                Serial.printf("[Web] Battery cells %u rejected — must be 2 or 3.\n", cells);
+                return;
+            }
+            Serial.printf("[Web] Battery type set to %uS\n", cells);
+            if (_batteryCellsCallback) _batteryCellsCallback(cells);
+        }        // ── ESC full-range calibration: {"type":"esc_calibrate"} ─────────────
         else if (strcmp(type, "esc_calibrate") == 0) {
             Serial.println("[Web] ESC full-range calibration requested.");
             if (_escCalibrateCallback) _escCalibrateCallback();

@@ -187,6 +187,10 @@ void setup() {
         battery.setRatio(ratio);
     });
 
+    webServer.onBatteryCells([](uint8_t cells) {
+        battery.setBatteryCells(cells);
+    });
+
     webServer.onEscCalibrate([]() {
         if (!motors.isEscReady()) {
             Serial.println("[Main] ESC calibration rejected — ESC still arming.");
@@ -282,6 +286,7 @@ void loop() {
             battery.getPercent(),
             battery.getVoltage(),
             battery.getRatio(),
+            battery.getBatteryCells(),
             safety.isSafe(),
             wifi.getIPAddress(),
             motors.isWeaponActive(),

@@ -908,7 +908,25 @@
       <div class="tab-content" id="tab-battery">
         <div class="setting-desc">The voltage divider ratio converts the ADC reading into battery voltage. Adjust it here if your multimeter shows a different value than the robot reports.</div>
 
-      <!-- Live reading from robot -->
+        <!-- Battery type selector -->
+        <div class="setting-row">
+          <div class="setting-label">Battery Type</div>
+          <div style="display:flex;gap:16px;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="radio" name="batt-cells" id="batt-cells-2s" value="2">
+              <span>2S <span style="color:#888;font-size:0.8rem">(7.4 V &mdash; 6.0&ndash;8.4 V)</span></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="radio" name="batt-cells" id="batt-cells-3s" value="3" checked>
+              <span>3S <span style="color:#888;font-size:0.8rem">(11.1 V &mdash; 9.0&ndash;12.6 V)</span></span>
+            </label>
+          </div>
+          <div class="setting-desc" id="batt-cells-desc" style="margin-top:4px">3S LiPo: 12.6 V full &mdash; 9.0 V empty</div>
+        </div>
+
+        <hr class="batt-calib-divider">
+
+        <!-- Live reading from robot -->
         <div class="setting-row" style="align-items:center;gap:4px">
           <div class="setting-label">Robot Reading</div>
           <div style="display:flex;align-items:baseline;gap:10px">
@@ -923,12 +941,12 @@
         <div class="setting-row">
           <div class="setting-label">Divider Ratio</div>
           <div class="range-row">
-            <input type="range" id="batt-ratio-slider" min="1.0" max="6.0" value="3.0" step="0.01">
+            <input type="range" id="batt-ratio-slider" min="1.0" max="10.0" value="3.0" step="0.01">
             <span class="range-value" id="batt-ratio-slider-val">3.00</span>
           </div>
           <div class="range-row" style="margin-top:4px">
             <input class="settings-input" type="number" id="batt-ratio-input"
-                   min="1.0" max="6.0" step="0.01" value="3.00"
+                   min="1.0" max="10.0" step="0.01" value="3.00"
                    style="flex:1;padding:8px 10px;font-family:monospace">
             <span class="setting-desc" style="flex-shrink:0;margin-left:8px;white-space:nowrap">V_batt = V_adc × ratio</span>
           </div>
@@ -1123,7 +1141,11 @@
 
       // Battery calibration live display
       if (typeof data.batteryV !== 'undefined' && typeof data.batteryRatio !== 'undefined') {
-        updateBattCalibDisplay(parseFloat(data.batteryV), parseFloat(data.batteryRatio));
+        updateBattCalibDisplay(
+          parseFloat(data.batteryV),
+          parseFloat(data.batteryRatio),
+          typeof data.batteryCells !== 'undefined' ? parseInt(data.batteryCells) : _lastBattCells
+        );
       }
 
       // ESC arming / calibration status
@@ -1549,16 +1571,26 @@
 
     // ── Battery calibration tab ────────────────────────────────────────────────
     let _lastBattV     = 0;
-    let _lastBattRatio = 3.0;
+    let _lastBattRatio = 4.9;
+    let _lastBattCells = 3;   // 2 or 3 — synced from robot status
     let _battDirty     = false;  // true while user is manually adjusting ratio
 
-    function updateBattCalibDisplay(v, ratio) {
+    function updateBattCalibDisplay(v, ratio, cells) {
       _lastBattV     = v;
       _lastBattRatio = ratio;
+      if (cells === 2 || cells === 3) {
+        _lastBattCells = cells;
+        // Sync the radio buttons if the robot reports a different type than shown
+        const radioEl = document.querySelector(`input[name=batt-cells][value="${cells}"]`);
+        if (radioEl && !radioEl.checked) { radioEl.checked = true; _updateBattCellsDesc(cells); }
+      }
+      // Voltage colour thresholds adapt to battery type
+      const warnV = _lastBattCells === 2 ? 6.8 : 10.2;
+      const critV = _lastBattCells === 2 ? 6.2 :  9.4;
       const el = document.getElementById('batt-live-v');
       el.textContent = v.toFixed(2) + ' V';
       el.className   = 'batt-live-voltage' +
-                       (v <= 6.2 ? ' crit' : v <= 7.0 ? ' warn' : '');
+                       (v <= critV ? ' crit' : v <= warnV ? ' warn' : '');
       document.getElementById('batt-live-adc-disp').textContent = 'GPIO: ' + (ratio > 0 ? (v / ratio).toFixed(3) : '–') + ' V';
       // Only sync ratio controls when user has not taken manual control
       if (!_battDirty) {
@@ -1567,11 +1599,18 @@
     }
 
     function _setBattRatioControls(ratio) {
-      const r = Math.min(6.0, Math.max(1.0, ratio));
+      const r = Math.min(10.0, Math.max(1.0, ratio));
       document.getElementById('batt-ratio-slider').value = r;
       document.getElementById('batt-ratio-slider-val').textContent = r.toFixed(2);
       document.getElementById('batt-ratio-input').value = r.toFixed(4);
       _updateBattPreview(r);
+    }
+
+    function _updateBattCellsDesc(cells) {
+      const desc = cells === 2
+        ? '2S LiPo: 8.4 V full — 6.0 V empty'
+        : '3S LiPo: 12.6 V full — 9.0 V empty';
+      document.getElementById('batt-cells-desc').textContent = desc;
     }
 
     function _updateBattPreview(newRatio) {
@@ -1596,11 +1635,20 @@
     document.getElementById('batt-ratio-input').addEventListener('input', function() {
       _battDirty = true;
       const r = parseFloat(this.value);
-      if (!isNaN(r) && r >= 1.0 && r <= 6.0) {
+      if (!isNaN(r) && r >= 1.0 && r <= 10.0) {
         document.getElementById('batt-ratio-slider').value = r;
         document.getElementById('batt-ratio-slider-val').textContent = r.toFixed(2);
         _updateBattPreview(r);
       }
+    });
+
+    document.querySelectorAll('input[name=batt-cells]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        const cells = parseInt(this.value, 10);
+        _lastBattCells = cells;
+        _updateBattCellsDesc(cells);
+        sendJSON({ type: 'battery_cells', cells });
+      });
     });
 
     document.getElementById('batt-calc-btn').addEventListener('click', () => {
@@ -1619,8 +1667,8 @@
         inputEl.focus();
         return;
       }
-      if (measured < 3.0 || measured > 12.0) {
-        showMsg('Value out of range. Expected a battery voltage between 3 V and 12 V.', true);
+      if (measured < 3.0 || measured > 15.0) {
+        showMsg('Value out of range. Expected a battery voltage between 3 V and 15 V.', true);
         inputEl.focus();
         return;
       }
@@ -1633,8 +1681,8 @@
       const vAdc     = _lastBattV / _lastBattRatio;
       const newRatio = measured / vAdc;
 
-      if (newRatio < 1.0 || newRatio > 6.0) {
-        showMsg('Calculated ratio (' + newRatio.toFixed(4) + ') is outside 1.0–6.0. ' +
+      if (newRatio < 1.0 || newRatio > 10.0) {
+        showMsg('Calculated ratio (' + newRatio.toFixed(4) + ') is outside 1.0–10.0. ' +
                 'Double-check your measurement and that the robot is reporting a live reading.', true);
         return;
       }
@@ -1646,7 +1694,7 @@
 
     document.getElementById('batt-apply-btn').addEventListener('click', () => {
       const ratio = parseFloat(document.getElementById('batt-ratio-input').value);
-      if (isNaN(ratio) || ratio < 1.0 || ratio > 6.0) {
+      if (isNaN(ratio) || ratio < 1.0 || ratio > 10.0) {
         document.getElementById('batt-ratio-input').focus();
         return;
       }

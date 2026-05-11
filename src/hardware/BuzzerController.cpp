@@ -11,7 +11,7 @@
 // Frequency 0 = silence (pause between beeps).
 
 static const BeepStep SEQ_STARTUP[] = {
-    {1568, 100}, {0, 50}, {1174, 100}, {0, 50}, {880, 200}
+    {880, 100}, {0, 50}, {1174, 100}, {0, 50}, {1568, 200}
 };
 
 static const BeepStep SEQ_ARMED[] = {

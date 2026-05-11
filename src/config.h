@@ -31,7 +31,7 @@
 //
 // ESP32-C3 Super Mini PCB pinout for this robot controller board.
 //
-#define PIN_BATTERY_ADC   0   // GPIO0  — Battery voltage divider (R1=20K, R2=10K)
+#define PIN_BATTERY_ADC   0   // GPIO0  — Battery voltage divider (R1=39K, R2=10K)
 #define PIN_MOTOR_LEFT    1   // GPIO1  — J5: Left wheel ESC signal
 #define PIN_MOTOR_RIGHT   3   // GPIO3  — J6: Right wheel ESC signal
 #define PIN_MOTOR_WEAPON  4   // GPIO4  — J7: Weapon motor ESC signal
@@ -129,19 +129,31 @@
 
 // ── Battery Monitor ───────────────────────────────────────────────────────────
 //
-// 7.4V (2S LiPo) voltage divider: R1=20KΩ (top), R2=10KΩ (bottom)
-//   V_adc = V_batt × R2 / (R1 + R2) = V_batt × 10K/30K = V_batt / 3
-//   V_batt = V_adc × 3
+// Supports 2S (7.4V) and 3S (11.1V) LiPo packs. Battery type is selectable
+// at runtime via the web UI and persisted to NVS.
+// Both share the same voltage divider: R1=39KΩ (top), R2=10KΩ (bottom)
+//   V_adc = V_batt × R2 / (R1 + R2) = V_batt × 10K/49K
+//   V_batt = V_adc × 4.9
+//
+// ADC headroom check (11dB attenuation, ~3.1V range):
+//   3S full charge → 12.6 / 4.9 = 2.57V  ✓
+//   2S full charge →  8.4 / 4.9 = 1.71V  ✓
 //
 // ESP32-C3 ADC reference = ~2.45V (with internal attenuation calibration).
 // ADC is 12-bit: raw values 0–4095.
 //
-#define BATTERY_R_RATIO       3.64f  // Voltage divider multiplier (see above)
-#define BATTERY_ADC_VREF      2.45f // ESP32-C3 ADC reference voltage (volts)
-#define BATTERY_ADC_BITS      4095  // 12-bit ADC max value
-#define BATTERY_VOLTAGE_FULL  8.4f  // 100% — 2S LiPo fully charged
-#define BATTERY_VOLTAGE_EMPTY 6.0f  // 0%  — 2S LiPo minimum safe voltage
-#define BATTERY_NUM_SAMPLES   8     // Number of samples for rolling average
+#define BATTERY_R_RATIO        4.9f  // Voltage divider multiplier (R1=39K, R2=10K)
+#define BATTERY_ADC_VREF       2.45f // ESP32-C3 ADC reference voltage (volts)
+#define BATTERY_ADC_BITS       4095  // 12-bit ADC max value
+
+// Voltage thresholds for each battery type (100% and 0% endpoints):
+#define BATTERY_VOLTAGE_FULL_2S   8.4f  // 100% — 2S LiPo (4.2V × 2)
+#define BATTERY_VOLTAGE_EMPTY_2S  6.0f  //   0% — 2S LiPo minimum safe (3.0V × 2)
+#define BATTERY_VOLTAGE_FULL_3S  12.6f  // 100% — 3S LiPo (4.2V × 3)
+#define BATTERY_VOLTAGE_EMPTY_3S  9.0f  //   0% — 3S LiPo minimum safe (3.0V × 3)
+#define BATTERY_DEFAULT_CELLS     3     // Default: 3 = 3S. Set to 2 for 2S.
+
+#define BATTERY_NUM_SAMPLES   8      // Number of samples for rolling average
 
 // ── WiFi / Access Point ───────────────────────────────────────────────────────
 //
