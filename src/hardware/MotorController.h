@@ -2,6 +2,9 @@
 // =============================================================================
 // MotorController.h — Drive and Weapon Motor Control
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // This class controls three motors using RC/ESC PWM signals via the ESP32
 // LEDC peripheral:

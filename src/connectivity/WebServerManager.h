@@ -2,6 +2,9 @@
 // =============================================================================
 // WebServerManager.h — HTTP Server + WebSocket Communication
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // This class runs the robot's web server and handles real-time communication
 // with the browser using WebSockets.

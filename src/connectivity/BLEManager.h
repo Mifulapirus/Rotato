@@ -2,6 +2,9 @@
 // =============================================================================
 // BLEManager.h — Bluetooth Low Energy GATT Server (Android app transport)
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // Runs a BLE GATT server so the Android app can control the robot without WiFi.
 //

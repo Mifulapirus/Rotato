@@ -2,6 +2,9 @@
 // =============================================================================
 // BuzzerController.h — Non-Blocking Buzzer Sound Sequences
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // Controls the passive buzzer connected to GPIO7 (via JP1 solder jumper).
 // Only compiled/used when HAS_BUZZER is defined in config.h.

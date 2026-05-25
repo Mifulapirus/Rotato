@@ -2,6 +2,9 @@
 // =============================================================================
 // BatteryMonitor.h — LiPo Battery Voltage Monitor
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // Reads battery voltage from the analog voltage divider connected to GPIO0.
 //

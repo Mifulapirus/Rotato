@@ -2,6 +2,9 @@
 // =============================================================================
 // version.h — Firmware Semantic Version  (EDIT THIS FILE TO BUMP VERSIONS)
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // Change MAJOR, MINOR, or PATCH here when you make a release.
 //   MAJOR — breaking change (new PCB revision, protocol change)

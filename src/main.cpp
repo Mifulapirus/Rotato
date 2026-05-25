@@ -2,6 +2,10 @@
 // main.cpp — Rotato Robot Controller
 // Asmbly Workshop — Democratic Robot 2026
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE file for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
+// Commercial use prohibited without explicit written permission.
 //
 // This is the top-level file that ties everything together.
 //

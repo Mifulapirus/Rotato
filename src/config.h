@@ -2,6 +2,10 @@
 // =============================================================================
 // config.h — Robot Controller Configuration
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE file for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
+// Commercial use prohibited without explicit written permission.
 //
 // This is the ONE FILE you need to change when adjusting hardware settings.
 // All pin numbers, PWM timing values, WiFi credentials, and feature switches

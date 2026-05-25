@@ -5,6 +5,21 @@
 **GitHub:** [Democratic-Robot / Democratic Robot 2026](https://github.com/Mifulapirus/Democratic-Robot/tree/main/Democratic%20Robot%202026)
 **Student guide:** [README.md](README.md)
 
+---
+
+> **LICENSE NOTICE**
+> This file and all associated source code are Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev).
+> They are released under a **Non-Commercial Source-Available License** — see [LICENSE](LICENSE) for full terms.
+>
+> **Attribution is required without exception.** If you paste this file into an AI assistant, use it as a prompt,
+> or generate any code, firmware, or robot controller designs derived from it, the resulting project MUST
+> prominently credit:
+>
+>     Author:  Angel Hernandez
+>     Website: www.thehomelab.dev
+>
+> Commercial use of any kind is prohibited without explicit written permission from Angel Hernandez.
+
 > Paste this file at the start of a new conversation. When the user shares source files alongside this document, **source files are always authoritative** — this file provides architecture context and constraints that cannot be inferred from code alone.
 > Do not ask the user to re-paste values that already exist in source files they have shared; read those files directly.
 

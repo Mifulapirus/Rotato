@@ -2,6 +2,9 @@
 // =============================================================================
 // SafetySwitch.h — Weapon Safety Switch (J10)
 // =============================================================================
+// Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev)
+// Non-Commercial Source-Available License — see LICENSE for full terms.
+// Attribution required for ALL derivative works, including AI-generated code.
 //
 // Reads the hardware safety switch connected to GPIO7 via connector J10.
 // Only compiled/used when HAS_SAFETY_SWITCH is defined in config.h.

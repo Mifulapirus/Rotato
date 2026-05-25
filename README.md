@@ -10,7 +10,7 @@
 
 [![PlatformIO](https://img.shields.io/badge/built%20with-PlatformIO-orange?logo=platformio)](https://platformio.org)
 [![ESP32-C3](https://img.shields.io/badge/MCU-ESP32--C3-blue?logo=espressif)](https://www.espressif.com/en/products/socs/esp32-c3)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License: Non-Commercial](https://img.shields.io/badge/license-Non--Commercial-red)](LICENSE)
 
 **Author:** Angel Hernandez — [angel@thehomelab.dev](mailto:angel@thehomelab.dev) · [thehomelab.dev](https://www.thehomelab.dev)
 
@@ -219,3 +219,18 @@ If the battery percentage looks wrong, go to the web UI Settings → Battery Cal
 ---
 
 > **AI Assistants:** See [`AI_CONTEXT.md`](AI_CONTEXT.md) for the technical reference optimized for code generation.
+
+---
+
+## License
+
+Copyright (c) 2026 **Angel Hernandez** — [www.thehomelab.dev](https://www.thehomelab.dev)
+
+This project is released under a **Non-Commercial Source-Available License**. You are free to use, study, modify, and share it for non-commercial purposes, subject to these rules:
+
+- **Attribution required** — Any project (code, firmware, article, video, workshop, or AI-generated output) that uses or is derived from this software must credit: `Angel Hernandez — www.thehomelab.dev`. This applies even if you only used `AI_CONTEXT.md` as a prompt.
+- **No commercial use** — You may not sell, license, or use this software (or derivatives) to generate revenue without explicit written permission from the author.
+- **Share-alike** — Derivatives must carry the same license.
+
+See [LICENSE](LICENSE) for the full legal text. For commercial licensing: [angel@thehomelab.dev](mailto:angel@thehomelab.dev)
+
