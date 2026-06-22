@@ -14,6 +14,8 @@
 
 **Author:** Angel Hernandez — [angel@thehomelab.dev](mailto:angel@thehomelab.dev) · [thehomelab.dev](https://www.thehomelab.dev)
 
+🔗 **Project page:** [thehomelab.dev/projects/rotato](https://thehomelab.dev/projects/rotato)
+
 </div>
 
 ---
