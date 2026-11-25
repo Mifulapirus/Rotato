@@ -633,6 +633,51 @@
       .settings-tabs::-webkit-scrollbar { display: none; }
       .settings-tabs .tab { flex: 0 0 auto; padding: 10px 12px; min-width: 60px; }
     }
+
+    /* ── Tank controller sticks ─────────────────────────────────────────────── */
+    #tank-container {
+      display: none;            /* JS shows this when tank mode is active */
+      width: 100%;
+      max-width: 500px;
+      background: #16213e;
+      border-radius: 16px;
+      padding: 16px 24px;
+      align-items: center;
+      justify-content: space-evenly;
+      gap: 24px;
+    }
+    .tank-stick-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .tank-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .tank-canvas {
+      border: 2px solid #e94560;
+      border-radius: 16px;
+      cursor: grab;
+      touch-action: none;
+      display: block;
+      width: 72px;
+      height: min(260px, calc(100svh - 420px));
+    }
+    .tank-canvas:active { cursor: grabbing; }
+    .tank-val { font-size: 0.75rem; color: #555; font-family: monospace; }
+
+    html[data-theme="light"] #tank-container { background: #fff; }
+    html[data-theme="light"] .tank-label     { color: #667; }
+    html[data-theme="light"] .tank-val       { color: #bbb; }
+
+    @media (min-width: 768px) {
+      #tank-container { flex: 1; max-width: none; }
+      .tank-canvas    { height: min(calc(50vw - 120px), 420px); }
+    }
+    @media (max-width: 767px) {
+      #tank-container { flex: 1; min-height: 0; overflow: hidden; padding: 12px 16px; gap: 16px; }
+      .tank-canvas    { height: min(calc(100svh - 400px), 260px); }
+    }
   </style>
 </head>
 <body>
@@ -676,6 +721,20 @@
       <h2>Drive</h2>
       <canvas id="joystick-canvas" width="240" height="240"></canvas>
       <div id="drive-values">X: 0.00 &nbsp; Y: 0.00</div>
+    </div>
+
+    <!-- ── Tank sticks (shown instead of joystick when Tank mode is active) ── -->
+    <div id="tank-container">
+      <div class="tank-stick-wrap">
+        <div class="tank-label">Left</div>
+        <canvas id="tank-left-canvas"  class="tank-canvas" width="80" height="300"></canvas>
+        <div class="tank-val" id="tank-left-val">0%</div>
+      </div>
+      <div class="tank-stick-wrap">
+        <div class="tank-label">Right</div>
+        <canvas id="tank-right-canvas" class="tank-canvas" width="80" height="300"></canvas>
+        <div class="tank-val" id="tank-right-val">0%</div>
+      </div>
     </div>
 
     <!-- ── Weapon ─────────────────────────────────────────────────────────── -->
@@ -740,6 +799,7 @@
             <label><input type="radio" name="drive-mode" value="expo"><span class="pill">Expo</span></label>
             <label><input type="radio" name="drive-mode" value="precision"><span class="pill">Precision</span></label>
             <label><input type="radio" name="drive-mode" value="rc"><span class="pill">RC Car</span></label>
+            <label><input type="radio" name="drive-mode" value="tank"><span class="pill">Tank</span></label>
           </div>
           <div class="setting-desc" id="mode-desc">Standard arcade mixing — Y = forward/back, X = turn. Full bidirectional control.</div>
         </div>
@@ -1220,6 +1280,7 @@
       applyChannelNames();
       applyTheme();
       applyWeaponMode(appSettings.weaponMode);
+      applyDriveLayout(appSettings.driveMode);
       syncSettingsControls();
     }
 
@@ -1247,8 +1308,24 @@
     function startDriveSendTimer() {
       if (sendTimer) clearInterval(sendTimer);
       sendTimer = setInterval(() => {
-        const t = transformDriveInput(driveX, driveY);
-        sendJSON({ type: 'drive', x: Math.round(t.x * 100) / 100, y: Math.round(t.y * 100) / 100 });
+        let x, y;
+        if (appSettings.driveMode === 'tank' && tankStickLeft && tankStickRight) {
+          // Convert tank L/R → arcade x/y (firmware always uses arcade mixing)
+          const sl = appSettings.speedLimit / 100;
+          const dz = appSettings.deadzone / 100;
+          function applyTankDZ(v) {
+            if (Math.abs(v) < dz) return 0;
+            return (v > 0 ? 1 : -1) * (Math.abs(v) - dz) / (1 - dz);
+          }
+          const L = applyTankDZ(tankStickLeft.getValue())  * sl;
+          const R = applyTankDZ(tankStickRight.getValue()) * sl;
+          y = (L + R) / 2;
+          x = (L - R) / 2;
+        } else {
+          const t = transformDriveInput(driveX, driveY);
+          x = t.x; y = t.y;
+        }
+        sendJSON({ type: 'drive', x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 });
       }, 50);
     }
 
@@ -1361,6 +1438,125 @@
     // Initial render
     drawJoystick();
 
+    // ── Tank sticks ────────────────────────────────────────────────────────────
+    //
+    // Each TankStick is a vertical joystick: slide up = forward (+1), down = reverse (-1).
+    // Values are converted to arcade x/y in startDriveSendTimer before sending.
+    const TANK_MARGIN = 28;  // px from top/bottom edge to track endpoints
+
+    function createTankStick(canvasId, valId) {
+      const cv  = document.getElementById(canvasId);
+      const ctx = cv.getContext('2d');
+      const vel = document.getElementById(valId);
+      let _active = false;
+      let _val    = 0;   // -1..+1
+      let _knobY  = cv.height / 2;
+
+      function _draw() {
+        const W = cv.width, H = cv.height;
+        const cx = W / 2, cy = H / 2;
+        const top = TANK_MARGIN, bot = H - TANK_MARGIN;
+        ctx.clearRect(0, 0, W, H);
+
+        // Track groove
+        ctx.beginPath();
+        ctx.moveTo(cx, top); ctx.lineTo(cx, bot);
+        ctx.strokeStyle = '#2a2a4a'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+
+        // Center neutral tick
+        ctx.beginPath();
+        ctx.moveTo(cx - 16, cy); ctx.lineTo(cx + 16, cy);
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 2; ctx.stroke();
+
+        // Fill from center to knob
+        if (Math.abs(_val) > 0.01) {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy); ctx.lineTo(cx, _knobY);
+          ctx.strokeStyle = _val > 0 ? '#4caf50' : '#e94560';
+          ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.stroke();
+        }
+
+        // Knob
+        const KR = Math.min(W / 2 - 4, 26);
+        ctx.beginPath();
+        ctx.arc(cx, _knobY, KR, 0, Math.PI * 2);
+        const gr = ctx.createRadialGradient(cx - 4, _knobY - 4, 2, cx, _knobY, KR);
+        const base = (_val < -0.01) ? '#e94560' : '#4caf50';
+        const lite = (_val < -0.01) ? '#ff6b81' : '#81c784';
+        gr.addColorStop(0, lite); gr.addColorStop(1, base);
+        ctx.fillStyle = gr; ctx.fill();
+      }
+
+      function _getY(e) {
+        const r = cv.getBoundingClientRect();
+        return (e.clientY - r.top) * (cv.height / r.height);
+      }
+
+      function _update(rawY) {
+        const cy  = cv.height / 2;
+        const top = TANK_MARGIN, bot = cv.height - TANK_MARGIN;
+        _knobY = Math.max(top, Math.min(bot, rawY));
+        _val   = -((_knobY - cy) / (cy - TANK_MARGIN));
+        _val   = Math.max(-1, Math.min(1, _val));
+        vel.textContent = (_val >= 0 ? '+' : '') + Math.round(_val * 100) + '%';
+        _draw();
+      }
+
+      function _release() {
+        _active = false;
+        _knobY  = cv.height / 2;
+        _val    = 0;
+        vel.textContent = '0%';
+        _draw();
+        _checkBothTankReleased();
+      }
+
+      cv.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        cv.setPointerCapture(e.pointerId);
+        _active = true;
+        _update(_getY(e));
+        startDriveSendTimer();
+      });
+      cv.addEventListener('pointermove',   e => { if (_active) _update(_getY(e)); });
+      cv.addEventListener('pointerup',     _release);
+      cv.addEventListener('pointercancel', _release);
+
+      _draw();
+      return {
+        getValue()      { return _val; },
+        get active()    { return _active; },
+        release()       { _release(); }
+      };
+    }
+
+    let tankStickLeft  = null;
+    let tankStickRight = null;
+
+    function _checkBothTankReleased() {
+      if (tankStickLeft  && tankStickLeft.active)  return;
+      if (tankStickRight && tankStickRight.active) return;
+      // Both sticks released — stop timer and send zero
+      if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
+      sendJSON({ type: 'drive', x: 0, y: 0 });
+    }
+
+    function applyDriveLayout(mode) {
+      const isTank = mode === 'tank';
+      document.getElementById('joystick-container').style.display = isTank ? 'none' : '';
+      document.getElementById('tank-container').style.display     = isTank ? 'flex' : 'none';
+      if (isTank) {
+        releaseJoystick();
+        // Lazy-init sticks (canvas must be in the DOM and visible first)
+        if (!tankStickLeft)  tankStickLeft  = createTankStick('tank-left-canvas',  'tank-left-val');
+        if (!tankStickRight) tankStickRight = createTankStick('tank-right-canvas', 'tank-right-val');
+      } else {
+        if (tankStickLeft)  tankStickLeft.release();
+        if (tankStickRight) tankStickRight.release();
+        if (sendTimer) { clearInterval(sendTimer); sendTimer = null; }
+      }
+    }
+
     // ── Weapon button ──────────────────────────────────────────────────────────
     let weaponActive = false;
     let _battVoltage = null;
@@ -1468,6 +1664,7 @@
       appSettings.invertY    = document.getElementById('invert-y').checked;
       appSettings.pwmRange   = parseInt(document.getElementById('pwm-range').value);
       saveAppSettings();
+      applyDriveLayout(appSettings.driveMode);
       // Send new range to robot immediately (no reboot needed)
       sendJSON({ type: 'pwm_range', us: appSettings.pwmRange });
       settingsOverlay.classList.remove('open');
