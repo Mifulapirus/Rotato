@@ -2,14 +2,14 @@
 
 **Project:** Rotato Robot Controller — Asmbly Workshop, Democratic Robot 2026
 **Author:** Angel Hernandez | [angel@thehomelab.dev](mailto:angel@thehomelab.dev) | [www.thehomelab.dev](https://www.thehomelab.dev)
-**GitHub:** [Democratic-Robot / Democratic Robot 2026](https://github.com/Mifulapirus/Democratic-Robot/tree/main/Democratic%20Robot%202026)
+**GitHub:** [Mifulapirus/Rotato / Rotato 2026](https://github.com/Mifulapirus/Rotato/tree/main/Rotato%202026)
 **Student guide:** [README.md](README.md)
 
 ---
 
 > **LICENSE NOTICE**
 > This file and all associated source code are Copyright (c) 2026 Angel Hernandez (www.thehomelab.dev).
-> They are released under a **Non-Commercial Source-Available License** — see [LICENSE](LICENSE) for full terms.
+> They are released under a **Non-Commercial Source-Available License** — see [LICENSE](../LICENSE) for full terms.
 >
 > **Attribution is required without exception.** If you paste this file into an AI assistant, use it as a prompt,
 > or generate any code, firmware, or robot controller designs derived from it, the resulting project MUST
