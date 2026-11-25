@@ -26,17 +26,15 @@ void BatteryMonitor::begin() {
     Serial.printf("[Battery] Using ratio: %.4f, battery: %uS (%.1fV–%.1fV)\n",
                   _rRatio, _cells, _voltEmpty, _voltFull);
 
-    // Set GPIO0 as analog input.
-    // Use 11dB attenuation to extend the measurable range to ~3.1V on the ADC pin.
-    // (Battery max = 12.6V → V_adc_max = 12.6 / 4.9 = 2.57V, within 3.1V range)
-    // Note: analogSetPinAttenuation is pin-specific (arduino-esp32 3.x preferred API).
+    // Configure the battery-sense pin (GPIO36 / A0) as an analog input.
+    // 11dB attenuation extends the measurable range to ~2.5V (linear region).
+    // (Battery max = 12.6V → V_adc_max = 12.6 / 5.7 = 2.21V)
     analogSetPinAttenuation(PIN_BATTERY_ADC, ADC_11db);
     pinMode(PIN_BATTERY_ADC, INPUT);
 
     // Warm up the buffer with initial readings
     for (uint8_t i = 0; i < BATTERY_NUM_SAMPLES; i++) {
-        int raw = analogRead(PIN_BATTERY_ADC);
-        _samples[i] = rawToVoltage(raw);
+        _samples[i] = readVoltage();
     }
     _filled = true;
 
@@ -51,8 +49,7 @@ void BatteryMonitor::begin() {
 
 void BatteryMonitor::update() {
     // Take a new reading and store in the circular buffer
-    int raw = analogRead(PIN_BATTERY_ADC);
-    _samples[_sampleIndex] = rawToVoltage(raw);
+    _samples[_sampleIndex] = readVoltage();
     _sampleIndex = (_sampleIndex + 1) % BATTERY_NUM_SAMPLES;
 
     // Compute rolling average across all samples
@@ -85,7 +82,7 @@ void BatteryMonitor::setRatio(float ratio) {
     // Refill the entire sample buffer with fresh ADC readings using the new ratio
     // so getVoltage() returns an accurate value immediately.
     for (uint8_t i = 0; i < BATTERY_NUM_SAMPLES; i++) {
-        _samples[i] = rawToVoltage(analogRead(PIN_BATTERY_ADC));
+        _samples[i] = readVoltage();
     }
     float sum = 0;
     for (uint8_t i = 0; i < BATTERY_NUM_SAMPLES; i++) sum += _samples[i];
@@ -110,10 +107,10 @@ void BatteryMonitor::setBatteryCells(uint8_t cells) {
                   _cells, _voltFull, _voltEmpty);
 }
 
-float BatteryMonitor::rawToVoltage(int raw) const {
-    // Convert 12-bit ADC reading to actual battery voltage.
-    // V_adc  = (raw / 4095) × VREF
+float BatteryMonitor::readVoltage() const {
+    // analogReadMilliVolts() returns the pin voltage using the ESP32's factory
+    // ADC calibration (eFuse), so no reference-voltage constant is needed.
     // V_batt = V_adc × _rRatio   (undo the voltage divider)
-    float v_adc = ((float)raw / (float)BATTERY_ADC_BITS) * BATTERY_ADC_VREF;
+    float v_adc = (float)analogReadMilliVolts(PIN_BATTERY_ADC) / 1000.0f;
     return v_adc * _rRatio;
 }

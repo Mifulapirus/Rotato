@@ -13,53 +13,97 @@
 //
 // HOW TO USE:
 //   - Change GPIO numbers if you wire things differently
-//   - Buzzer is always on GPIO7 via JP1. If JP1 is unsoldered, GPIO7 is free expansion.
-//   - Safety switch is on GPIO5 (J8) — independent of the buzzer jumper.
+//   - Drive motors run from the on-board AT8236 dual H-bridge (U1).
+//   - Weapon is still an RC ESC on the 3-pin servo header (M4).
 //   - Change AP_SSID / AP_PASSWORD for your robot's WiFi name
 // =============================================================================
 
 // ── Feature Flags ─────────────────────────────────────────────────────────────
 //
-// HAS_BUZZER        — enable if JP1 solder jumper is closed (GPIO7 → buzzer).
-//                     If JP1 is open, GPIO7 is unused (expansion J9 area).
-// HAS_SAFETY_SWITCH — enable if a kill-switch is wired to J8 (GPIO5).
-//                     Both flags are independent and can be set at the same time.
+// HAS_BUZZER        — passive buzzer BZ1 wired directly to GPIO5.
+// HAS_SAFETY_SWITCH — the Rotato 2027 board has NO safety-switch input
+//                     (SW1/SW2 switch battery power instead). Leave undefined
+//                     unless you wire a kill-switch to a free GPIO and set
+//                     PIN_SAFETY_SWITCH below.
 //
 #define HAS_BUZZER
-#define HAS_SAFETY_SWITCH
+// #define HAS_SAFETY_SWITCH
 
 // Enable/disable BLE (NimBLE-Arduino — connects the Android app to the robot)
 #define BLE_ENABLED
 
 // ── Pin Definitions ──────────────────────────────────────────────────────────
 //
-// ESP32-C3 Super Mini PCB pinout for this robot controller board.
+// Rotato 2027 board — ESP32 D1 Mini (U2, ESP32-WROOM-32) + AT8236 (U1).
+// Taken from Electronics/rotato 2027/rotato 2027.kicad_sch.
 //
-#define PIN_BATTERY_ADC   0   // GPIO0  — Battery voltage divider (R1=39K, R2=10K)
-#define PIN_MOTOR_LEFT    1   // GPIO1  — J5: Left wheel ESC signal
-#define PIN_MOTOR_RIGHT   3   // GPIO3  — J6: Right wheel ESC signal
-#define PIN_MOTOR_WEAPON  4   // GPIO4  — J7: Weapon motor ESC signal
-#define PIN_SAFETY_SWITCH 5   // GPIO5  — J8: Weapon kill-switch (active LOW, INPUT_PULLUP)
-#define PIN_EXPANSION_1   6   // GPIO6  — J9: Open/expansion (unused)
-#define PIN_BUZZER        7   // GPIO7  — Buzzer via JP1. If JP1 open: unused expansion.
-#define PIN_BOOT_BUTTON   9   // GPIO9  — Built-in BOOT button (active LOW, hold 3s to clear WiFi)
+//   Signal              GPIO   D1 Mini label   Board net / part
+//   ──────────────────  ────   ─────────────   ──────────────────────────
+//   Battery sense        36    SVP / A0        R1 47K / R2 10K divider
+//   Left motor  AIN1     26    D0              U1 AIN1 → AOUT1 → M2
+//   Left motor  AIN2     18    D5              U1 AIN2 → AOUT2 → M2
+//   Right motor BIN1     19    D6              U1 BIN1 → BOUT1 → M3
+//   Right motor BIN2     23    D7              U1 BIN2 → BOUT2 → M3
+//   Weapon ESC signal    17    D3              M4 servo header pin 1
+//   Buzzer                5    D8              BZ1 (+)
+//   RGB status LED       16    D4              D2 DIN (via R3 330Ω)
+//   I2C SDA              21    D2              J3 pin 4
+//   I2C SCL              22    D1              J3 pin 3
+//   BOOT button           0    —               on the D1 Mini module (if fitted)
+//
+#define PIN_BATTERY_ADC   36  // GPIO36 (ADC1_CH0) — input-only, no pull-ups
+#define PIN_LEFT_IN1      26  // AT8236 AIN1
+#define PIN_LEFT_IN2      18  // AT8236 AIN2
+#define PIN_RIGHT_IN1     19  // AT8236 BIN1
+#define PIN_RIGHT_IN2     23  // AT8236 BIN2
+#define PIN_MOTOR_WEAPON  17  // Weapon ESC signal (M4)
+#define PIN_BUZZER         5  // Passive buzzer BZ1 (GPIO5 is a strapping pin — fine as output)
+#define PIN_STATUS_LED    16  // Addressable RGB LED D2 (WS2812-style, 1 pixel) — not used yet
+#define PIN_I2C_SDA       21  // J3 expansion connector — not used yet
+#define PIN_I2C_SCL       22  // J3 expansion connector — not used yet
+#define PIN_BOOT_BUTTON    0  // D1 Mini BOOT button (active LOW, hold 3s to clear WiFi)
+// #define PIN_SAFETY_SWITCH  ?  // No safety switch on this board (see HAS_SAFETY_SWITCH)
 
-// ── PWM / RC Servo Timing ─────────────────────────────────────────────────────
+// ── Drive motors — AT8236 H-bridge PWM ────────────────────────────────────────
+//
+// The AT8236 has two inputs per motor (xIN1, xIN2):
+//   IN1  IN2   Result
+//    0    0    Coast (outputs off)
+//    1    0    Forward
+//    0    1    Reverse
+//    1    1    Brake
+//
+// Speed is set by PWM on the inputs. Two decay modes are supported:
+//   Slow decay (DRIVE_SLOW_DECAY = true, recommended):
+//     forward = IN1 high, IN2 PWM (inverted). Motor brakes during the off-time,
+//     giving a more linear speed response and better low-speed control.
+//     Stopped = both high = brake.
+//   Fast decay (DRIVE_SLOW_DECAY = false):
+//     forward = IN1 PWM, IN2 low. Motor coasts during the off-time.
+//     Stopped = both low = coast.
+//
+// 20 kHz keeps the PWM above human hearing (no motor whine).
+// At 20 kHz the LEDC clock (80 MHz) allows up to 11 bits; 10 bits is plenty.
+//
+#define DRIVE_PWM_FREQ_HZ       20000
+#define DRIVE_PWM_BITS          10      // duty 0–1023
+#define DRIVE_SLOW_DECAY        true
+#define DRIVE_MAX_POWER         100     // % of full duty at full stick (1–100).
+                                        // Lower it if the drive motors are rated below
+                                        // battery voltage, e.g. 6V motors on 3S → ~50.
+                                        // (For beginners, use the UI's Speed Limit instead.)
+
+// ── Weapon — RC ESC Timing ────────────────────────────────────────────────────
 //
 // Standard RC/ESC protocol: 50Hz signal, pulse width 1000–2000 microseconds.
-//   1000µs = full reverse  |  1500µs = stop/neutral  |  2000µs = full forward
 //
 // The ESP32 LEDC peripheral generates these pulses.
 // Timer resolution is 14-bit: values 0–16383 represent 0–20ms (one full period).
-// NOTE: ESP-IDF 4.4.x on ESP32-C3 caps LEDC resolution at 14 bits (max 16383).
 //   Duty formula: duty = (pulse_us / 20000.0) * ((1 << PWM_RESOLUTION_BITS) - 1)
 //
 #define PWM_FREQUENCY_HZ    50      // 50 Hz = 20ms period (standard RC protocol)
-#define PWM_RESOLUTION_BITS 14      // 14-bit resolution (ESP-IDF 4.4.x max for ESP32-C3)
+#define PWM_RESOLUTION_BITS 14      // 14-bit resolution
 #define PWM_PERIOD_US       20000   // 20,000 µs = one full period
-#define PWM_NEUTRAL_US      1500    // Stop / neutral position
-#define PWM_MIN_US          1000    // Full reverse
-#define PWM_MAX_US          2000    // Full forward
 #define PWM_WEAPON_IDLE_US  1000    // Weapon off (minimum pulse = ESC disarmed)
 #define PWM_WEAPON_FULL_US  2000    // Weapon full speed
 
@@ -94,37 +138,21 @@
 #define WEAPON_RAMP_MS_DEFAULT   500   // ms for full 0→100% sweep
 #define WEAPON_CURVE_DEFAULT       0   // 0=linear, 1=quadratic, 2=s-curve
 
-// ── Drive pulse-width range (servo/ESC travel) ────────────────────────────────
-//
-// Standard ESCs respond to 1000–2000 µs (±500 µs from neutral 1500 µs).
-// Some ESCs and servos accept a wider window (e.g. 800–2200 µs = ±700 µs)
-// which gives more resolution and fuller travel.
-//
-// PWM_DRIVE_HALF_RANGE_US sets how far from neutral the drive signal swings:
-//   pulse = NEUTRAL ± HALF_RANGE   (clamped to PWM_MIN_US / PWM_MAX_US)
-//
-// This value can also be changed at runtime via the web settings panel
-// ("Servo Range" slider).  Increase if motors only move a small fraction of
-// their travel at full stick deflection.
-//
-// Safe starting range: 500 (standard).  Typical max: 700.  Hard limit: 950
-// (keeps pulse inside 550–2450 µs, well clear of most ESC arming windows).
-//
-#define PWM_DRIVE_HALF_RANGE_US  500   // ±µs from neutral (default = standard 1000–2000)
-
-// LEDC channels assigned to each motor (ESP32 has up to 8 channels)
-// IMPORTANT — channel-to-timer mapping on ESP32 (arduino-esp32 v2.x):
+// LEDC channels (ESP32 has 16: 0–7 high-speed, 8–15 low-speed)
+// IMPORTANT — channel-to-timer mapping (arduino-esp32 v2.x, high-speed group):
 //   CH 0, 1 → Timer 0   CH 2, 3 → Timer 1   CH 4, 5 → Timer 2   CH 6, 7 → Timer 3
-// ledcWriteTone() reconfigures the ENTIRE timer, so motors and buzzer must
-// never share the same timer pair.
-//   Left  motor : CH 0 → Timer 0  ┐ drive pair — same timer is fine
-//   Right motor : CH 1 → Timer 0  ┘
-//   Weapon motor: CH 2 → Timer 1  — isolated, no other channel on Timer 1
-//   Buzzer      : CH 4 → Timer 2  — isolated, avoids corrupting weapon PWM
-#define LEDC_CH_LEFT_MOTOR    0
-#define LEDC_CH_RIGHT_MOTOR   1
-#define LEDC_CH_WEAPON_MOTOR  2
-#define LEDC_CH_BUZZER        4     // Must NOT share Timer 1 with weapon (CH 2–3)
+// Channels sharing a timer share its frequency, and ledcWriteTone() reconfigures
+// the ENTIRE timer, so each frequency group gets its own timer(s):
+//   Left  AIN1/AIN2 : CH 0, 1 → Timer 0  ┐ 20 kHz drive
+//   Right BIN1/BIN2 : CH 2, 3 → Timer 1  ┘
+//   Weapon ESC      : CH 4    → Timer 2  — 50 Hz, isolated
+//   Buzzer          : CH 6    → Timer 3  — tone, isolated
+#define LEDC_CH_LEFT_IN1      0
+#define LEDC_CH_LEFT_IN2      1
+#define LEDC_CH_RIGHT_IN1     2
+#define LEDC_CH_RIGHT_IN2     3
+#define LEDC_CH_WEAPON_MOTOR  4
+#define LEDC_CH_BUZZER        6
 
 // Motor direction flags — set to true if a motor spins the wrong way
 // (Common in differential drive: one motor is mounted mirrored)
@@ -135,20 +163,19 @@
 //
 // Supports 2S (7.4V) and 3S (11.1V) LiPo packs. Battery type is selectable
 // at runtime via the web UI and persisted to NVS.
-// Both share the same voltage divider: R1=39KΩ (top), R2=10KΩ (bottom)
-//   V_adc = V_batt × R2 / (R1 + R2) = V_batt × 10K/49K
-//   V_batt = V_adc × 4.9
+// Both share the same voltage divider: R1=47KΩ (top), R2=10KΩ (bottom), C2 100nF
+//   V_adc = V_batt × R2 / (R1 + R2) = V_batt × 10K/57K
+//   V_batt = V_adc × 5.7
 //
-// ADC headroom check (11dB attenuation, ~3.1V range):
-//   3S full charge → 12.6 / 4.9 = 2.57V  ✓
-//   2S full charge →  8.4 / 4.9 = 1.71V  ✓
+// ADC headroom check (11dB attenuation, linear up to ~2.5V on ESP32):
+//   3S full charge → 12.6 / 5.7 = 2.21V  ✓
+//   2S full charge →  8.4 / 5.7 = 1.47V  ✓
 //
-// ESP32-C3 ADC reference = ~2.45V (with internal attenuation calibration).
-// ADC is 12-bit: raw values 0–4095.
+// The ADC is read with analogReadMilliVolts(), which applies the chip's
+// factory (eFuse) calibration, so no reference-voltage constant is needed.
+// Fine-tune BATTERY_R_RATIO at runtime from the web UI if your meter disagrees.
 //
-#define BATTERY_R_RATIO        4.9f  // Voltage divider multiplier (R1=39K, R2=10K)
-#define BATTERY_ADC_VREF       2.45f // ESP32-C3 ADC reference voltage (volts)
-#define BATTERY_ADC_BITS       4095  // 12-bit ADC max value
+#define BATTERY_R_RATIO        5.7f  // Voltage divider multiplier (R1=47K, R2=10K)
 
 // Voltage thresholds for each battery type (100% and 0% endpoints):
 #define BATTERY_VOLTAGE_FULL_2S   8.4f  // 100% — 2S LiPo (4.2V × 2)

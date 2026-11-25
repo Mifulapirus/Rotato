@@ -6,13 +6,13 @@
 // Non-Commercial Source-Available License — see LICENSE for full terms.
 // Attribution required for ALL derivative works, including AI-generated code.
 //
-// Reads battery voltage from the analog voltage divider connected to GPIO0.
+// Reads battery voltage from the analog voltage divider connected to GPIO36 (A0).
 //
 // CIRCUIT:
-//   Battery (+) ── R1 (39KΩ) ── ADC PIN ── R2 (10KΩ) ── GND
+//   Battery (+) ── R1 (47KΩ) ── ADC PIN ── R2 (10KΩ) ── GND
 //
-//   V_adc = V_batt × 10K / 49K   →   V_batt = V_adc × 4.9
-//   Works for both 2S (max 8.4V → 1.71V ADC) and 3S (max 12.6V → 2.57V ADC)
+//   V_adc = V_batt × 10K / 57K   →   V_batt = V_adc × 5.7
+//   Works for both 2S (max 8.4V → 1.47V ADC) and 3S (max 12.6V → 2.21V ADC)
 //
 // ROLLING AVERAGE:
 //   ADC readings can be noisy. We collect BATTERY_NUM_SAMPLES readings and
@@ -73,6 +73,6 @@ private:
     float       _voltEmpty   = BATTERY_VOLTAGE_EMPTY_3S; // Safe-minimum threshold (V)
     Preferences _prefs;                              // NVS storage
 
-    // Convert raw 12-bit ADC value to battery voltage using _rRatio
-    float rawToVoltage(int raw) const;
+    // Read the ADC (calibrated mV) and convert to battery voltage using _rRatio
+    float readVoltage() const;
 };

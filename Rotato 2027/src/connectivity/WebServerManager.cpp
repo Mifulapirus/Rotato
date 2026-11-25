@@ -235,12 +235,7 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             Serial.printf("[Web] BLE %s by settings panel.\n", enabled ? "enabled" : "disabled");
             if (_bleEnableCallback) _bleEnableCallback(enabled);
         }
-        // ── PWM range: {"type":"pwm_range","us":600} ───────────────────────────
-        else if (strcmp(type, "pwm_range") == 0) {
-            uint16_t us = (uint16_t)(doc["us"] | PWM_DRIVE_HALF_RANGE_US);
-            Serial.printf("[Web] PWM range set to ±%u µs by settings panel.\n", us);
-            if (_pwmRangeCallback) _pwmRangeCallback(us);
-        }        // ── Rename: {"type":"rename","name":"MyRobot"} ("" = reset to default) ──
+        // ── Rename: {"type":"rename","name":"MyRobot"} ("" = reset to default) ──
         else if (strcmp(type, "rename") == 0) {
             String name = doc["name"] | "";
             if (!name.isEmpty()) {

@@ -10,12 +10,12 @@
 // ── Private helpers ──────────────────────────────────────────────────────────
 
 uint32_t MotorController::usToDuty(uint32_t pulse_us) {
-    // Convert pulse width (µs) to duty cycle for the LEDC peripheral.
+    // Convert pulse width (µs) to duty cycle for the weapon LEDC channel.
     // Formula: duty = (pulse_us / period_us) × (2^resolution - 1)
     return (uint32_t)((float)pulse_us / (float)PWM_PERIOD_US * (float)((1u << PWM_RESOLUTION_BITS) - 1));
 }
 
-uint32_t MotorController::speedToDuty(float speed, bool reversed) {
+void MotorController::writeDriveMotor(uint8_t chIn1, uint8_t chIn2, float speed, bool reversed) {
     // Clamp speed to valid range
     if (speed >  1.0f) speed =  1.0f;
     if (speed < -1.0f) speed = -1.0f;
@@ -23,43 +23,58 @@ uint32_t MotorController::speedToDuty(float speed, bool reversed) {
     // Optionally invert for mirrored motors (see MOTOR_LEFT/RIGHT_REVERSED in config.h)
     if (reversed) speed = -speed;
 
-    // Map [-1.0, 1.0] → [NEUTRAL - halfRange, NEUTRAL + halfRange]
-    //   speed  0.0 → 1500µs (neutral/stop)
-    //   speed  1.0 → 1500 + _halfRangeUs µs (full forward)
-    //   speed -1.0 → 1500 - _halfRangeUs µs (full reverse)
-    //
-    // NOTE: Do NOT clamp to PWM_MIN_US/PWM_MAX_US here — that would silently
-    // override the user-configured extended range.  setDriveRange() already
-    // validates _halfRangeUs ≤ 950, so the computed pulse stays within
-    // 550–2450 µs which is safe for all common ESCs and servos.
-    // An absolute hardware-safety clamp (500–2500 µs) is intentionally wide.
-    uint32_t pulse_us = (uint32_t)(PWM_NEUTRAL_US + speed * (float)_halfRangeUs);
-    if (pulse_us < 500u)   pulse_us = 500u;    // absolute floor — never below 500 µs
-    if (pulse_us > 2500u)  pulse_us = 2500u;   // absolute ceiling — never above 2500 µs
-    return usToDuty(pulse_us);
-}
+    const uint32_t maxDuty = (1u << DRIVE_PWM_BITS) - 1;
+    uint32_t duty = (uint32_t)(fabsf(speed) * (float)DRIVE_MAX_POWER / 100.0f * (float)maxDuty + 0.5f);
+    if (duty > maxDuty) duty = maxDuty;
 
-void MotorController::writeDuty(uint8_t channel, uint32_t duty) {
-    ledcWrite(channel, duty);
+#if DRIVE_SLOW_DECAY
+    // Slow decay: hold one input HIGH and PWM the other with inverted duty.
+    //   forward: IN1 = 1, IN2 = PWM(1 - d)     reverse: IN1 = PWM(1 - d), IN2 = 1
+    //   stop   : IN1 = IN2 = 1 → brake
+    if (speed >= 0.0f) {
+        ledcWrite(chIn1, maxDuty);
+        ledcWrite(chIn2, maxDuty - duty);
+    } else {
+        ledcWrite(chIn1, maxDuty - duty);
+        ledcWrite(chIn2, maxDuty);
+    }
+#else
+    // Fast decay: PWM one input, hold the other LOW.
+    //   forward: IN1 = PWM(d), IN2 = 0         reverse: IN1 = 0, IN2 = PWM(d)
+    //   stop   : IN1 = IN2 = 0 → coast
+    if (speed >= 0.0f) {
+        ledcWrite(chIn1, duty);
+        ledcWrite(chIn2, 0);
+    } else {
+        ledcWrite(chIn1, 0);
+        ledcWrite(chIn2, duty);
+    }
+#endif
 }
 
 // ── Public methods ────────────────────────────────────────────────────────────
 
 void MotorController::begin() {
-    // Set up LEDC timer and attach channels to their GPIO pins.
+    // Set up LEDC channels and attach them to their GPIO pins.
     // The LEDC peripheral is ESP32's hardware PWM generator.
 
-    ledcSetup(LEDC_CH_LEFT_MOTOR,   PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
-    ledcSetup(LEDC_CH_RIGHT_MOTOR,  PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
-    ledcSetup(LEDC_CH_WEAPON_MOTOR, PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
+    // Drive: four 20 kHz channels, one per AT8236 input (AIN1/AIN2/BIN1/BIN2)
+    ledcSetup(LEDC_CH_LEFT_IN1,  DRIVE_PWM_FREQ_HZ, DRIVE_PWM_BITS);
+    ledcSetup(LEDC_CH_LEFT_IN2,  DRIVE_PWM_FREQ_HZ, DRIVE_PWM_BITS);
+    ledcSetup(LEDC_CH_RIGHT_IN1, DRIVE_PWM_FREQ_HZ, DRIVE_PWM_BITS);
+    ledcSetup(LEDC_CH_RIGHT_IN2, DRIVE_PWM_FREQ_HZ, DRIVE_PWM_BITS);
+    ledcAttachPin(PIN_LEFT_IN1,  LEDC_CH_LEFT_IN1);
+    ledcAttachPin(PIN_LEFT_IN2,  LEDC_CH_LEFT_IN2);
+    ledcAttachPin(PIN_RIGHT_IN1, LEDC_CH_RIGHT_IN1);
+    ledcAttachPin(PIN_RIGHT_IN2, LEDC_CH_RIGHT_IN2);
 
-    ledcAttachPin(PIN_MOTOR_LEFT,   LEDC_CH_LEFT_MOTOR);
-    ledcAttachPin(PIN_MOTOR_RIGHT,  LEDC_CH_RIGHT_MOTOR);
+    // Weapon: 50 Hz RC ESC signal
+    ledcSetup(LEDC_CH_WEAPON_MOTOR, PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
     ledcAttachPin(PIN_MOTOR_WEAPON, LEDC_CH_WEAPON_MOTOR);
 
-    // Drive motors start at neutral (1500 µs)
-    writeDuty(LEDC_CH_LEFT_MOTOR,  usToDuty(PWM_NEUTRAL_US));
-    writeDuty(LEDC_CH_RIGHT_MOTOR, usToDuty(PWM_NEUTRAL_US));
+    // Drive motors start stopped
+    writeDriveMotor(LEDC_CH_LEFT_IN1,  LEDC_CH_LEFT_IN2,  0.0f, false);
+    writeDriveMotor(LEDC_CH_RIGHT_IN1, LEDC_CH_RIGHT_IN2, 0.0f, false);
 
     // ── Weapon ESC arming ────────────────────────────────────────────────────
     // RC ESCs require the PWM signal to be held at minimum throttle (1000 µs)
@@ -67,11 +82,12 @@ void MotorController::begin() {
     // ESC_INIT_DELAY_MS and block all weapon commands until ready.
     _escReady     = false;
     _escInitStart = millis();
-    writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
+    ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
 
     Serial.printf("[Motors] Weapon ESC arming — holding %u µs for %u ms.\n",
                   PWM_WEAPON_IDLE_US, ESC_INIT_DELAY_MS);
-    Serial.println("[Motors] Drive motors initialized at neutral.");
+    Serial.printf("[Motors] AT8236 drive initialized (%u Hz, %s decay).\n",
+                  DRIVE_PWM_FREQ_HZ, DRIVE_SLOW_DECAY ? "slow" : "fast");
 }
 
 void MotorController::setDrive(float x, float y) {
@@ -96,8 +112,8 @@ void MotorController::setDrive(float x, float y) {
     if (rightSpeed >  1.0f) rightSpeed =  1.0f;
     if (rightSpeed < -1.0f) rightSpeed = -1.0f;
 
-    writeDuty(LEDC_CH_LEFT_MOTOR,  speedToDuty(leftSpeed,  MOTOR_LEFT_REVERSED));
-    writeDuty(LEDC_CH_RIGHT_MOTOR, speedToDuty(rightSpeed, MOTOR_RIGHT_REVERSED));
+    writeDriveMotor(LEDC_CH_LEFT_IN1,  LEDC_CH_LEFT_IN2,  leftSpeed,  MOTOR_LEFT_REVERSED);
+    writeDriveMotor(LEDC_CH_RIGHT_IN1, LEDC_CH_RIGHT_IN2, rightSpeed, MOTOR_RIGHT_REVERSED);
 
     Serial.printf("[Motors] Drive x=%.2f y=%.2f -> L=%.2f R=%.2f\n",
                   x, y, leftSpeed, rightSpeed);
@@ -130,11 +146,11 @@ void MotorController::setWeaponSpeed(float speed) {
 }
 
 void MotorController::stopAll() {
-    // Send neutral (1500µs) to drive motors and idle (1000µs) to weapon.
+    // Stop both drive motors and send idle (1000µs) to the weapon ESC.
     // Immediately kills ramp and calibration.
-    writeDuty(LEDC_CH_LEFT_MOTOR,   usToDuty(PWM_NEUTRAL_US));
-    writeDuty(LEDC_CH_RIGHT_MOTOR,  usToDuty(PWM_NEUTRAL_US));
-    writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
+    writeDriveMotor(LEDC_CH_LEFT_IN1,  LEDC_CH_LEFT_IN2,  0.0f, false);
+    writeDriveMotor(LEDC_CH_RIGHT_IN1, LEDC_CH_RIGHT_IN2, 0.0f, false);
+    ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
     _weaponActive       = false;
     _weaponTargetSpeed  = 0.0f;
     _weaponCurrentSpeed = 0.0f;
@@ -143,14 +159,6 @@ void MotorController::stopAll() {
         Serial.println("[Motors] ESC calibration aborted by stopAll.");
     }
     Serial.println("[Motors] All stopped.");
-}
-
-void MotorController::setDriveRange(uint16_t halfRangeUs) {
-    if (halfRangeUs < 200)  halfRangeUs = 200;   // floor: avoids very twitchy near-zero range
-    if (halfRangeUs > 950)  halfRangeUs = 950;   // ceiling: keeps pulse inside ~550–2450 µs
-    _halfRangeUs = halfRangeUs;
-    Serial.printf("[Motors] Drive range set to ±%u µs (pulse: %u–%u µs)\n",
-                  _halfRangeUs, PWM_NEUTRAL_US - _halfRangeUs, PWM_NEUTRAL_US + _halfRangeUs);
 }
 
 // ── ESC initialization & calibration ─────────────────────────────────────────
@@ -172,7 +180,7 @@ void MotorController::updateEscState() {
             if (now - _escCalibStart >= ESC_CALIB_HIGH_MS) {
                 _escCalib      = EscCalib::CAL_LOW;
                 _escCalibStart = now;
-                writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
+                ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
                 Serial.println("[Motors] ESC Calibration step 2/2 — minimum throttle (1000 µs).");
             }
             break;
@@ -180,7 +188,7 @@ void MotorController::updateEscState() {
         case EscCalib::CAL_LOW:
             if (now - _escCalibStart >= ESC_CALIB_LOW_MS) {
                 _escCalib = EscCalib::DONE;
-                writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
+                ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_IDLE_US));
                 Serial.println("[Motors] ESC Full-range calibration complete.");
             }
             break;
@@ -207,7 +215,7 @@ bool MotorController::startEscFullCalib() {
     _weaponActive  = false;
     _escCalib      = EscCalib::CAL_HIGH;
     _escCalibStart = millis();
-    writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_FULL_US));
+    ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(PWM_WEAPON_FULL_US));
     Serial.println("[Motors] ESC Full-range calibration started: step 1/2 — maximum throttle (2000 µs).");
     return true;
 }
@@ -237,7 +245,7 @@ void MotorController::applyWeaponPwm() {
     }
     uint32_t pulse_us = (uint32_t)(PWM_WEAPON_IDLE_US +
                         curved * (float)(PWM_WEAPON_FULL_US - PWM_WEAPON_IDLE_US));
-    writeDuty(LEDC_CH_WEAPON_MOTOR, usToDuty(pulse_us));
+    ledcWrite(LEDC_CH_WEAPON_MOTOR, usToDuty(pulse_us));
 }
 
 void MotorController::stepWeaponRamp() {

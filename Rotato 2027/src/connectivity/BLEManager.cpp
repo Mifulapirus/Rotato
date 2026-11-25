@@ -81,7 +81,7 @@ void BLEManager::begin(const String& deviceName) {
 
     // ── Init NimBLE stack ────────────────────────────────────────────────────
     NimBLEDevice::init(deviceName.c_str());
-    NimBLEDevice::setPower(9);  // +9 dBm — maximum for ESP32-C3
+    NimBLEDevice::setPower(9);  // +9 dBm — maximum for ESP32
 
     // ── GATT server ──────────────────────────────────────────────────────────
     _server = NimBLEDevice::createServer();

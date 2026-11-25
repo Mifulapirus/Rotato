@@ -828,14 +828,6 @@
             </label>
           </div>
         </div>
-        <div class="setting-row">
-          <div class="setting-label">Servo / ESC Range</div>
-          <div class="range-row">
-            <input type="range" id="pwm-range" min="200" max="950" value="500" step="25">
-            <span class="range-value" id="pwm-range-val">500µs</span>
-          </div>
-          <div class="setting-desc" id="pwm-range-desc">Pulse ±500 µs → 1000–2000 µs (standard). Increase if motors only move part of their travel at full stick. Apply sends the new range to the robot immediately.</div>
-        </div>
         <button class="s-btn-primary" id="drive-apply">Apply Drive Settings</button>
       </div>
 
@@ -1236,7 +1228,6 @@
     let appSettings = {
       driveMode: 'arcade', speedLimit: 100, deadzone: 5,
       invertY: false, channelDrive: '', channelWeapon: '', bleEnabled: true,
-      pwmRange: 500,   // half-range µs sent to firmware (default = standard 500)
       theme: 'dark',
       weaponMode: 'button',   // 'button' | 'slider'
       weaponRampMs: 500,      // 0–3000 ms
@@ -1262,9 +1253,6 @@
       document.getElementById('ble-enabled').checked         = appSettings.bleEnabled;
       document.getElementById('ch-drive-name').value         = appSettings.channelDrive;
       document.getElementById('ch-weapon-name').value        = appSettings.channelWeapon;
-      document.getElementById('pwm-range').value             = appSettings.pwmRange;
-      document.getElementById('pwm-range-val').textContent   = appSettings.pwmRange + 'µs';
-      _updatePwmRangeDesc(appSettings.pwmRange);
       // Weapon acceleration
       const rampRadio = document.querySelector(`input[name=weapon-ramp][value="${appSettings.weaponRampMs}"]`);
       if (rampRadio) rampRadio.checked = true;
@@ -1638,16 +1626,6 @@
     document.getElementById('deadzone').addEventListener('input', function() {
       document.getElementById('deadzone-val').textContent = this.value + '%';
     });
-    function _updatePwmRangeDesc(us) {
-      const lo = 1500 - us, hi = 1500 + us;
-      document.getElementById('pwm-range-desc').textContent =
-        `Pulse ±${us} µs → ${lo}–${hi} µs. ` +
-        (us <= 500 ? 'Standard RC range.' : us <= 700 ? 'Extended range — verify ESC accepts this.' : 'Wide range — use with care.');
-    }
-    document.getElementById('pwm-range').addEventListener('input', function() {
-      document.getElementById('pwm-range-val').textContent = this.value + 'µs';
-      _updatePwmRangeDesc(parseInt(this.value));
-    });
 
     // Live mode description
     document.querySelectorAll('input[name=drive-mode]').forEach(r => {
@@ -1662,11 +1640,8 @@
       appSettings.speedLimit = parseInt(document.getElementById('speed-limit').value);
       appSettings.deadzone   = parseInt(document.getElementById('deadzone').value);
       appSettings.invertY    = document.getElementById('invert-y').checked;
-      appSettings.pwmRange   = parseInt(document.getElementById('pwm-range').value);
       saveAppSettings();
       applyDriveLayout(appSettings.driveMode);
-      // Send new range to robot immediately (no reboot needed)
-      sendJSON({ type: 'pwm_range', us: appSettings.pwmRange });
       settingsOverlay.classList.remove('open');
     });
 

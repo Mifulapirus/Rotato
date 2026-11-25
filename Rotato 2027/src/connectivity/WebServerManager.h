@@ -46,7 +46,6 @@ using WeaponAccelCallback = std::function<void(uint16_t rampMs, uint8_t curve)>;
 using SettingsCallback    = std::function<void(const String& ssid, const String& pass)>;
 using ForgetCallback      = std::function<void()>;
 using BleEnableCallback   = std::function<void(bool enabled)>;
-using PwmRangeCallback    = std::function<void(uint16_t halfRangeUs)>;
 using RenameCallback      = std::function<void(const String& name)>;
 using ApPasswordCallback  = std::function<void(const String& pass)>;
 using BatteryCalibCallback  = std::function<void(float ratio)>;
@@ -70,7 +69,6 @@ public:
     void onSettings(SettingsCallback cb)       { _settingsCallback = cb; }
     void onForget(ForgetCallback cb)           { _forgetCallback = cb; }
     void onBleEnable(BleEnableCallback cb)     { _bleEnableCallback = cb; }
-    void onPwmRange(PwmRangeCallback cb)       { _pwmRangeCallback = cb; }
     void onRename(RenameCallback cb)           { _renameCallback = cb; }
     void onApPassword(ApPasswordCallback cb)   { _apPasswordCallback = cb; }
     void onBatteryCalib(BatteryCalibCallback cb)    { _batteryCalibCallback = cb; }
@@ -98,7 +96,6 @@ private:
     SettingsCallback    _settingsCallback;
     ForgetCallback      _forgetCallback;
     BleEnableCallback   _bleEnableCallback;
-    PwmRangeCallback    _pwmRangeCallback;
     RenameCallback      _renameCallback;
     ApPasswordCallback  _apPasswordCallback;
     BatteryCalibCallback  _batteryCalibCallback;

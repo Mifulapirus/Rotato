@@ -6,7 +6,7 @@
 // Non-Commercial Source-Available License — see LICENSE for full terms.
 // Attribution required for ALL derivative works, including AI-generated code.
 //
-// Controls the passive buzzer connected to GPIO7 (via JP1 solder jumper).
+// Controls the passive buzzer BZ1 connected to GPIO5 (PIN_BUZZER).
 // Only compiled/used when HAS_BUZZER is defined in config.h.
 //
 // IMPORTANT: This class is NON-BLOCKING. It does NOT use delay().

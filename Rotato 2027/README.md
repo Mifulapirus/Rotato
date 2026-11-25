@@ -9,7 +9,7 @@
 *A combat-style workshop robot built at [Asmbly](https://asmbly.org) — controlled from your browser, no app required.*
 
 [![PlatformIO](https://img.shields.io/badge/built%20with-PlatformIO-orange?logo=platformio)](https://platformio.org)
-[![ESP32-C3](https://img.shields.io/badge/MCU-ESP32--C3-blue?logo=espressif)](https://www.espressif.com/en/products/socs/esp32-c3)
+[![ESP32](https://img.shields.io/badge/MCU-ESP32-blue?logo=espressif)](https://www.espressif.com/en/products/socs/esp32)
 [![License: Non-Commercial](https://img.shields.io/badge/license-Non--Commercial-red)](../LICENSE)
 
 **Author:** Angel Hernandez — [angel@thehomelab.dev](mailto:angel@thehomelab.dev) · [thehomelab.dev](https://www.thehomelab.dev)
@@ -28,7 +28,7 @@
 
 **Rotato** is a small combat-style workshop robot built at Asmbly. It has two drive wheels and an optional weapon motor, all controlled from your phone or laptop through a browser — no app to install.
 
-The brain is an **ESP32-C3 Super Mini**, a tiny WiFi + Bluetooth microcontroller. The firmware (the software running on it) is written in C++ and built with PlatformIO.
+The brain is an **ESP32 D1 Mini** (ESP32-WROOM-32), a small WiFi + Bluetooth microcontroller board. The two drive wheels are powered directly by an **AT8236** dual H-bridge on the Rotato 2027 board; the weapon uses a standard RC ESC. The firmware (the software running on it) is written in C++ and built with PlatformIO.
 
 ---
 
@@ -63,36 +63,46 @@ Open the Settings panel in the web UI, enter your WiFi network name and password
 
 ### GPIO Pin Map
 
-| GPIO | Connector | What's connected |
-|------|-----------|-----------------|
-| GPIO0 | — | Battery voltage sensor (ADC) |
-| GPIO1 | J5 | Left wheel ESC signal |
-| GPIO3 | J6 | Right wheel ESC signal |
-| GPIO4 | J7 | Weapon motor ESC signal |
-| GPIO5 | J8 | Safety switch (short to GND = weapon blocked) |
-| GPIO6 | J9 | Expansion — free for your own additions |
-| GPIO7 | JP1 | Buzzer (only active if JP1 solder jumper is closed) |
-| GPIO9 | — | Built-in BOOT button (hold 3s to reset WiFi) |
+| GPIO | D1 Mini pin | Part | What's connected |
+|------|-------------|------|-----------------|
+| GPIO36 | SVP / A0 | R1/R2 | Battery voltage sensor (ADC) |
+| GPIO26 | D0 | U1 AIN1 | Left wheel motor (M2), input 1 |
+| GPIO18 | D5 | U1 AIN2 | Left wheel motor (M2), input 2 |
+| GPIO19 | D6 | U1 BIN1 | Right wheel motor (M3), input 1 |
+| GPIO23 | D7 | U1 BIN2 | Right wheel motor (M3), input 2 |
+| GPIO17 | D3 | M4 | Weapon ESC signal (3-pin servo header) |
+| GPIO5 | D8 | BZ1 | Buzzer |
+| GPIO16 | D4 | D2 | RGB status LED (addressable, not used by firmware yet) |
+| GPIO21 | D2 | J3 | I2C SDA (expansion, not used yet) |
+| GPIO22 | D1 | J3 | I2C SCL (expansion, not used yet) |
+| GPIO0 | — | — | BOOT button on the D1 Mini, if fitted (hold 3s to reset WiFi) |
 
 ### Battery
-- Type: **2S LiPo** (two cells in series)
-- Safe range: **6.0V** (empty) to **8.4V** (full)
-- The battery voltage is measured through a resistor divider on GPIO0. The web UI shows battery % and voltage.
+- Type: **2S or 3S LiPo** (selectable in the web UI; default 3S)
+- Safe range: **6.0–8.4V** (2S) or **9.0–12.6V** (3S)
+- The battery voltage is measured through a 47K/10K resistor divider on GPIO36. The web UI shows battery % and voltage.
+- SW1 (screw switch) or SW2 (wired switch) turns the robot on and off.
 
-### Motors (ESC Signal)
-All three motors use the standard RC servo signal: **50 Hz, pulse width 1000–2000 µs**.
+### Drive Motors (AT8236 H-bridge)
+The left and right wheels are plain DC motors driven by the on-board **AT8236** dual H-bridge. Each motor has two control inputs; the firmware drives them with **20 kHz PWM** (above human hearing, so the motors don't whine).
 
-| Pulse | Effect |
-|-------|--------|
-| 1000 µs | Full reverse (drive) / stopped (weapon) |
-| 1500 µs | Neutral / stop |
-| 2000 µs | Full forward / full speed |
+| IN1 | IN2 | Motor |
+|-----|-----|-------|
+| 0 | 0 | Coast |
+| 1 | 0 | Forward |
+| 0 | 1 | Reverse |
+| 1 | 1 | Brake |
 
-### Safety Switch (J8)
-A physical kill-switch for the weapon. When triggered, the weapon motor stops immediately regardless of what the web UI says. Wire a switch between GPIO5 and GND on connector J8.
+By default the firmware uses *slow decay* (`DRIVE_SLOW_DECAY true`): one input stays high while the other is pulsed, which gives smoother low-speed control and brakes when the stick is centered.
 
-### Buzzer (JP1)
-A passive buzzer on GPIO7, connected through solder jumper JP1. Produces startup, weapon-on, weapon-off, and error tones. If JP1 is not soldered, GPIO7 is free to use for something else.
+### Weapon (ESC Signal)
+The weapon uses a standard RC ESC on the 3-pin header M4: **50 Hz, pulse width 1000 µs (off) to 2000 µs (full speed)**.
+
+### Buzzer
+A passive buzzer on GPIO5. Produces startup, weapon-on, weapon-off, and error tones.
+
+### No safety switch
+The Rotato 2027 board has no weapon kill-switch input, so `HAS_SAFETY_SWITCH` is disabled in `config.h`. Use the power switch to cut everything.
 
 ---
 
@@ -104,15 +114,13 @@ The weapon ESC (motor speed controller) needs special handling:
 
 2. **ESC full-range calibration** teaches the ESC what your signal range is. Trigger it from the Settings panel in the web UI. **Always disconnect the weapon motor (unplug the motor wires) before running calibration.** The ESC will beep to confirm each step.
 
-3. **The safety switch physically overrides the weapon.** Even if the UI shows the weapon as "on", if the safety switch is triggered the weapon will not spin.
-
 ---
 
 ## 5. Building and Flashing the Firmware
 
 ### What You Need
 - [VS Code](https://code.visualstudio.com/) with the [PlatformIO extension](https://platformio.org/install/ide?install=vscode)
-- A USB-C cable connected to the ESP32-C3 Super Mini
+- A USB cable connected to the ESP32 D1 Mini (on Windows you may need the CH340 or CP210x USB driver)
 
 ### First-time Flash (important order!)
 
@@ -160,21 +168,21 @@ Almost all hardware customization lives in a single file: **`src/config.h`**. It
 #define AP_PASSWORD     "12345678"  // must be 8+ characters
 ```
 
-### Disable the buzzer (if JP1 is not soldered)
+### Disable the buzzer (if BZ1 is not fitted)
 ```cpp
 // Comment out this line:
 // #define HAS_BUZZER
 ```
 
-### Disable the safety switch (if none is connected)
+### Limit drive motor power (e.g. 6V motors on a 3S battery)
 ```cpp
-// Comment out this line:
-// #define HAS_SAFETY_SWITCH
+#define DRIVE_MAX_POWER  100  // % of full power at full stick; try 50 for 6V motors on 3S
 ```
+For a gentler robot (beginners), use the **Speed Limit** slider in the web UI instead.
 
-### Adjust drive range (if motors only move a little)
+### Change how the drive motors stop
 ```cpp
-#define PWM_DRIVE_HALF_RANGE_US  500  // try increasing to 600 or 700
+#define DRIVE_SLOW_DECAY  true   // true = brake when stick is centered; false = coast
 ```
 
 ---

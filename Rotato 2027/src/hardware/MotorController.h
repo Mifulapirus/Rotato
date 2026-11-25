@@ -6,25 +6,23 @@
 // Non-Commercial Source-Available License — see LICENSE for full terms.
 // Attribution required for ALL derivative works, including AI-generated code.
 //
-// This class controls three motors using RC/ESC PWM signals via the ESP32
-// LEDC peripheral:
-//   - Left wheel motor  (J5)
-//   - Right wheel motor (J6)
-//   - Weapon motor      (J7)
+// This class controls three motors via the ESP32 LEDC peripheral:
+//   - Left wheel motor  (M2) — AT8236 channel A (AIN1/AIN2), 20 kHz PWM
+//   - Right wheel motor (M3) — AT8236 channel B (BIN1/BIN2), 20 kHz PWM
+//   - Weapon motor      (M4) — RC ESC, 50 Hz servo pulses (1000–2000 µs)
 //
 // ARCADE DRIVE MIXING:
 //   The web joystick gives us X (turn) and Y (forward/back) axes (-1.0 to 1.0).
 //   We mix them into left/right wheel speeds using:
 //     leftSpeed  = Y + X
 //     rightSpeed = Y - X
-//   Both are clamped to [-1.0, 1.0] then converted to PWM pulse widths.
+//   Both are clamped to [-1.0, 1.0], scaled by DRIVE_MAX_POWER (config.h),
+//   then written to the H-bridge inputs (see DRIVE_SLOW_DECAY in config.h).
 //
-// PWM PULSE MATH:
+// WEAPON PWM PULSE MATH:
 //   Period = 20,000 µs (50 Hz)
-//   Duty  = (pulse_us / 20000.0) × 65535   (16-bit LEDC)
-//   speed  0.0 → 1500µs (stop)
-//   speed  1.0 → 2000µs (full forward)
-//   speed -1.0 → 1000µs (full reverse)
+//   Duty   = (pulse_us / 20000.0) × (2^PWM_RESOLUTION_BITS − 1)
+//   speed 0.0 → 1000 µs (idle)   speed 1.0 → 2000 µs (full)
 // =============================================================================
 
 #include <Arduino.h>
@@ -33,7 +31,7 @@
 
 class MotorController {
 public:
-    // Initialize LEDC channels and set all motors to neutral/stopped
+    // Initialize LEDC channels and set all motors to stopped/idle
     void begin();
 
     // Drive the robot using joystick axes.
@@ -51,7 +49,7 @@ public:
     // The firmware ramps the actual PWM output toward this target at the configured rate.
     void setWeaponSpeed(float speed);
 
-    // Emergency stop: set all three motors to neutral/idle immediately.
+    // Emergency stop: stop both drive motors and idle the weapon immediately.
     // Called by safety switch or on disconnect. Also aborts any ESC calibration.
     void stopAll();
 
@@ -93,18 +91,8 @@ public:
     // String label for the current calibration step: "idle", "high", "low", "done".
     const char* escCalibStr() const;
 
-    // Set the drive pulse-width half-range (µs from neutral 1500).
-    // Default = PWM_DRIVE_HALF_RANGE_US (500 = standard 1000–2000 µs window).
-    // Range is clamped to [200, 950] to stay safely inside most ESC windows.
-    // Call this from the settings panel "Servo Range" control.
-    void setDriveRange(uint16_t halfRangeUs);
-
-    // Return current half-range setting
-    uint16_t getDriveRange() const { return _halfRangeUs; }
-
 private:
-    bool     _weaponActive = false;
-    uint16_t _halfRangeUs  = PWM_DRIVE_HALF_RANGE_US;  // runtime-adjustable drive range
+    bool    _weaponActive = false;
 
     // Weapon speed ramp
     float    _weaponTargetSpeed  = 0.0f;               // 0–1 requested by user
@@ -128,14 +116,11 @@ private:
     // Step _weaponCurrentSpeed one tick toward _weaponTargetSpeed
     void stepWeaponRamp();
 
-    // Convert a speed value (-1.0 to +1.0) to a PWM duty cycle (0–65535).
-    // Optionally reverses direction if the motor is mounted mirrored.
-    uint32_t speedToDuty(float speed, bool reversed);
+    // Write a signed speed (-1.0 to +1.0) to one AT8236 channel (IN1/IN2 pair).
+    // Applies DRIVE_MAX_POWER, the reversed flag and the decay mode.
+    void writeDriveMotor(uint8_t chIn1, uint8_t chIn2, float speed, bool reversed);
 
-    // Convert a raw pulse width in microseconds to a 16-bit LEDC duty value.
-    //   duty = (pulse_us / PWM_PERIOD_US) × 65535
+    // Convert a raw pulse width in microseconds to a weapon LEDC duty value.
+    //   duty = (pulse_us / PWM_PERIOD_US) × (2^PWM_RESOLUTION_BITS − 1)
     uint32_t usToDuty(uint32_t pulse_us);
-
-    // Write a duty value to an LEDC channel
-    void writeDuty(uint8_t channel, uint32_t duty);
 };

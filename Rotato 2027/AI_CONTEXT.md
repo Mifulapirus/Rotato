@@ -37,7 +37,9 @@
 
 | | |
 |---|---|
-| MCU | ESP32-C3 Super Mini |
+| MCU | ESP32 D1 Mini (ESP32-WROOM-32), PlatformIO board `wemos_d1_mini32` |
+| Drive motor driver | AT8236 dual H-bridge (2 PWM inputs per motor, 20 kHz) |
+| Weapon | RC ESC, 50 Hz servo pulses |
 | Framework | Arduino (arduino-esp32 v2.x) via PlatformIO |
 | Language | C++17 |
 | Libraries | ESPAsyncWebServer ^3.10.3, ArduinoJson ^7.3.1, NimBLE-Arduino ^2.2.3 |
@@ -82,7 +84,7 @@ src/
   web_ui_html.h                   ← Auto-generated (do not edit)
   main.cpp                        ← setup() + loop(); wires all modules together
   hardware/
-    MotorController.h/.cpp        ← LEDC PWM for 3 ESCs; arcade drive mixing; ESC arming/calib
+    MotorController.h/.cpp        ← LEDC PWM: AT8236 drive (4 ch) + weapon ESC; arcade mixing; ESC arming/calib
     BuzzerController.h/.cpp       ← Non-blocking beep sequences via LEDC
     BatteryMonitor.h/.cpp         ← 12-bit ADC, rolling average, voltage→percent
     SafetySwitch.h/.cpp           ← Debounced digital input, weapon interlock
@@ -167,7 +169,6 @@ Endpoint: `ws://<robot-ip>/ws`
 { "type": "forget" }
 { "type": "rename",       "name": "MyRobot" }
 { "type": "apPassword",   "pass": "newpass" }
-{ "type": "pwmRange",     "halfRangeUs": 500 }
 { "type": "batteryCalib", "ratio": 3.64 }
 { "type": "escCalibrate" }
 { "type": "bleEnable",    "enabled": true }
@@ -237,8 +238,8 @@ Settings persisted via Arduino `Preferences`. Scattered across multiple `.cpp` f
 4. **ArduinoJson v7** — use `JsonDocument`, not `DynamicJsonDocument` (removed in v7).
 5. **NimBLE-Arduino v2.x API** — not the older `BLEDevice`/`BLEServer` API from the ESP32 Arduino core.
 6. **ESPAsyncWebServer callbacks run on the network FreeRTOS task**, not the Arduino loop. Keep callbacks short; avoid heavy `Serial.printf` inside them.
-7. **LEDC timer sharing:** CH0+CH1 → Timer0, CH2+CH3 → Timer1, CH4+CH5 → Timer2. `ledcWriteTone()` reconfigures the whole timer. See `config.h` for channel assignments.
-8. **14-bit LEDC resolution** is the ESP32-C3 maximum on IDF 4.4.x. Do not use 16-bit.
+7. **LEDC timer sharing:** CH0+CH1 → Timer0, CH2+CH3 → Timer1, CH4+CH5 → Timer2, CH6+CH7 → Timer3. Drive uses CH0–3 (20 kHz), weapon CH4 (50 Hz), buzzer CH6. `ledcWriteTone()` reconfigures the whole timer. See `config.h` for channel assignments.
+8. **LEDC resolution is limited by frequency:** drive at 20 kHz uses 10 bits (max 11); weapon at 50 Hz uses 14 bits.
 9. **`WiFiManager` is a custom class** in this project — not the popular third-party library of the same name.
 10. **Adding a new WebSocket command:** add callback `using` type + `onXxx()` in `WebServerManager.h` → parse new `"type"` in `.cpp` → register lambda in `main.cpp` `setup()`.
 
@@ -266,7 +267,7 @@ When you make changes to the codebase, **update the documentation as part of the
 ## Suggested Starter Prompts
 
 **Making a firmware change:**
-> "I'm working on the Rotato robot firmware (ESP32-C3, PlatformIO/Arduino C++, ArduinoJson v7, NimBLE v2, ESPAsyncWebServer). I've pasted `AI_CONTEXT.md` for context. I want to [describe change]. Here is the relevant source file: [paste file]. Follow the existing patterns — no `delay()` in loop, all pins from `config.h`, callbacks registered in `main.cpp`."
+> "I'm working on the Rotato 2027 robot firmware (ESP32 D1 Mini + AT8236 H-bridge, PlatformIO/Arduino C++, ArduinoJson v7, NimBLE v2, ESPAsyncWebServer). I've pasted `AI_CONTEXT.md` for context. I want to [describe change]. Here is the relevant source file: [paste file]. Follow the existing patterns — no `delay()` in loop, all pins from `config.h`, callbacks registered in `main.cpp`."
 
 **Adding a new feature:**
 > "Add [feature] to the Rotato firmware. Architecture: callback-based decoupling between `hardware/` and `connectivity/` modules. All settings in `config.h`. Non-blocking `millis()` timing only. Update `AI_CONTEXT.md` if the protocol, NVS keys, or architecture changes."

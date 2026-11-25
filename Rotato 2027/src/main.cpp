@@ -75,7 +75,7 @@ RobotState robotState = RobotState::STARTUP;
 uint32_t   lastStatusBroadcast_ms = 0;
 uint32_t   lastBatteryRead_ms = 0;
 
-// ── Boot button state (GPIO9, hold 3s to clear WiFi credentials) ─────────────
+// ── Boot button state (GPIO0, hold 3s to clear WiFi credentials) ─────────────
 static uint32_t bootBtnPressTime_ms = 0;
 static bool     bootBtnHandled      = false;
 
@@ -84,7 +84,8 @@ void setup() {
     // ── 1. Serial ────────────────────────────────────────────────────────────
     Serial.begin(115200);
 
-    // ESP32-C3 Super Mini uses USB-CDC — wait up to 5s for monitor to connect.
+    // On USB-CDC boards this waits up to 5s for a monitor. The D1 Mini uses a
+    // USB-UART chip, where Serial is always ready, so this returns immediately.
     {
         uint32_t t0 = millis();
         while (!Serial && (millis() - t0 < 5000)) { delay(10); }
@@ -167,10 +168,6 @@ void setup() {
 
     webServer.onBleEnable([](bool en) {
         ble.setEnabled(en);
-    });
-
-    webServer.onPwmRange([](uint16_t halfRangeUs) {
-        motors.setDriveRange(halfRangeUs);
     });
 
     webServer.onRename([](const String& name) {
