@@ -21,7 +21,8 @@
 //   │   MotorController   │    │   WiFiManager                     │
 //   │   BuzzerController  │◄───│   WebServerManager  (WebSocket)   │
 //   │   BatteryMonitor    │    │   BLEManager        (stub)        │
-//   │   SafetySwitch      │    └───────────────────────────────────┘
+//   │   SafetySwitch      │    │   GamepadManager    (Xbox BLE)    │
+//   │   StatusLed         │    └───────────────────────────────────┘
 //   └─────────────────────┘
 //
 // STARTUP SEQUENCE:
@@ -29,7 +30,7 @@
 //   2. Hardware drivers (motors to neutral, battery monitor, buzzer, safety)
 //   3. WiFi (AP or STA mode)
 //   4. Web server + WebSocket
-//   5. BLE stubs (disabled by default — see config.h)
+//   5. BLE GATT server (Android app) + Bluetooth game controller
 //   6. Startup beep and ready indication
 //
 // THE LOOP:
@@ -48,11 +49,15 @@
 #include "hardware/BuzzerController.h"
 #include "hardware/BatteryMonitor.h"
 #include "hardware/SafetySwitch.h"
+#include "hardware/StatusLed.h"
 
 // ── Connectivity ─────────────────────────────────────────────────────────────
 #include "connectivity/WiFiManager.h"
 #include "connectivity/WebServerManager.h"
 #include "connectivity/BLEManager.h"
+#include "connectivity/GamepadManager.h"
+#include "connectivity/NetDiscovery.h"
+#include "connectivity/BtNearby.h"
 
 // ── Module instances ──────────────────────────────────────────────────────────
 MotorController  motors;
@@ -62,6 +67,9 @@ SafetySwitch     safety;
 WiFiManager      wifi;
 WebServerManager webServer;
 BLEManager       ble;
+GamepadManager   gamepad;
+NetDiscovery     discovery;
+StatusLed        statusLed;
 
 // ── Robot state ──────────────────────────────────────────────────────────────
 enum class RobotState {
@@ -74,10 +82,48 @@ enum class RobotState {
 RobotState robotState = RobotState::STARTUP;
 uint32_t   lastStatusBroadcast_ms = 0;
 uint32_t   lastBatteryRead_ms = 0;
+uint32_t   lastGamepadUi_ms = 0;
+uint32_t   lastBtInfo_ms = 0;
+
+// ── Bluetooth tab: details of every Bluetooth device ────────────────────────
+// Sends {"type":"bt", "addr", "maxLinks", "bonds":[…], "phone", "devices":[…]}.
+// Each device is a BtDeviceInfo (see BtDeviceInfo.h); the browser renders any
+// number of them, so a future Bluetooth device just adds one line below.
+static void broadcastBluetoothInfo() {
+    if (webServer.clientCount() == 0) return;
+    JsonDocument doc;
+    doc["type"]  = "bt";
+    doc["phone"] = ble.isConnected();          // Rotato phone app (robot is the peripheral)
+    BtInfo::addLocal(doc);
+    JsonArray devices = doc["devices"].to<JsonArray>();
+    BtDeviceInfo info;
+    if (gamepad.getDeviceInfo(info)) BtInfo::toJson(info, devices.add<JsonObject>());
+    // e.g. if (remote.getDeviceInfo(info)) BtInfo::toJson(info, devices.add<JsonObject>());
+    String out;
+    serializeJson(doc, out);
+    webServer.broadcastText(out.c_str());
+}
 
 // ── Boot button state (GPIO0, hold 3s to clear WiFi credentials) ─────────────
 static uint32_t bootBtnPressTime_ms = 0;
 static bool     bootBtnHandled      = false;
+
+// ── Status LED — pick the most important thing to show (see config.h) ──────
+static void updateStatusLed() {
+    using P = StatusLed::Pattern;
+    bool anyoneConnected = webServer.clientCount() > 0 || ble.isConnected() || gamepad.isConnected();
+
+    P p;
+    if (motors.isWeaponActive())                                p = P::WEAPON;
+    else if (!motors.isEscReady())                              p = P::ESC_ARMING;
+    else if (battery.getPercent() <= STATUS_LED_LOW_BATT_PCT)   p = P::BATTERY_LOW;
+    else if (gamepad.isPairingRequested())                      p = P::PAIRING;
+    else if (anyoneConnected)                                   p = P::SOLID;
+    else                                                        p = P::HEARTBEAT;
+
+    statusLed.setPattern(p);
+    statusLed.update();
+}
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 void setup() {
@@ -100,7 +146,7 @@ void setup() {
     Serial.println("  Weaponized Plastic - Rotato 2027");
     Serial.println("========================================\n");
     Serial.println("[Boot] Serial OK");
-    Serial.printf("[Boot] Firmware v%s  (built %s %s)\n", FW_VERSION_FULL, FW_BUILD_DATE, FW_BUILD_TIME);
+    Serial.printf("[Boot] Firmware %s for PCB rev %s  (built %s %s)\n", FW_VERSION_FULL, PCB_REVISION_STR, FW_BUILD_DATE, FW_BUILD_TIME);
 
     // ── Chip info ────────────────────────────────────────────────────────────
     {
@@ -129,6 +175,8 @@ void setup() {
     battery.begin();
     buzzer.begin();
     safety.begin();
+    statusLed.begin();
+    statusLed.setPattern(StatusLed::Pattern::ESC_ARMING);
 
     // Boot button — active LOW, internal pull-up
     pinMode(PIN_BOOT_BUTTON, INPUT_PULLUP);
@@ -137,6 +185,10 @@ void setup() {
     // Uncomment to wipe saved credentials if the AP doesn't appear:
     // wifi.clearCredentials();
     wifi.begin();
+    // http://<robot-name>.local — see NetDiscovery.h for how several robots coexist
+    discovery.begin(NetDiscovery::toHostname(wifi.getRobotName()),
+                    NetDiscovery::toHostname(wifi.getDefaultName()),
+                    wifi.getRobotName(), wifi.getDefaultName());
 
     // ── 4. Web server ────────────────────────────────────────────────────────
     webServer.onDrive([](float x, float y) {
@@ -243,6 +295,40 @@ void setup() {
         }
     });
 
+    // ── 5b. Bluetooth game controller (Xbox) ─────────────────────────────────
+    // Must start after ble.begin() — both share the NimBLE stack.
+    gamepad.onDrive([](float x, float y) {
+        motors.setDrive(x, y);
+    });
+    gamepad.onWeaponSpeed([](float speed) {
+        if (speed > 0.0f && !safety.isSafe()) {
+            Serial.println("[Main] Gamepad weapon blocked by safety switch!");
+            return;
+        }
+        bool wasActive = motors.isWeaponActive();
+        motors.setWeaponSpeed(speed);
+        if (motors.isWeaponActive()) {
+            if (!wasActive) buzzer.beepWeaponOn();
+            robotState = RobotState::WEAPON_ACTIVE;
+        } else {
+            if (wasActive) buzzer.beepWeaponOff();
+            robotState = RobotState::READY;
+        }
+    });
+    gamepad.onConnection([](bool connected) {
+        if (connected) buzzer.beepArmed();
+        else           buzzer.beepError();
+    });
+    gamepad.onButtonPress([](uint32_t pressed) {
+        if (pressed & GamepadManager::BTN_A) buzzer.beepNope();   // A = little error sound
+    });
+    webServer.onRobotsScan([]()    { discovery.requestScan(); });
+    webServer.onBtScan([]()        { BtNearby::requestScan(BT_NEARBY_SCAN_MS); });
+    webServer.setHostname(String(discovery.hostname()) + ".local", discovery.preferredTaken());
+    webServer.onGamepadPair([]()   { gamepad.startPairing(); });
+    webServer.onGamepadForget([]() { gamepad.forgetAll(); });
+    gamepad.begin();
+
     // ── 6. Ready ─────────────────────────────────────────────────────────────
     robotState = RobotState::IDLE;
     buzzer.beepStartup();
@@ -283,6 +369,7 @@ void loop() {
 
     // Status broadcast to browser
     if (now - lastStatusBroadcast_ms >= WS_STATUS_INTERVAL_MS) {
+        webServer.setGamepadStatus(gamepad.statusStr(), gamepad.getName());
         webServer.broadcastStatus(
             battery.getPercent(),
             battery.getVoltage(),
@@ -300,9 +387,38 @@ void loop() {
         lastStatusBroadcast_ms = now;
     }
 
+    // Live controller state to the browser (moves the UI joystick / weapon
+    // slider and the Bluetooth tab's controller view). Rate-limited by
+    // GAMEPAD_UI_INTERVAL_MS and only sent when the input changed.
+    if (now - lastGamepadUi_ms >= GAMEPAD_UI_INTERVAL_MS) {
+        lastGamepadUi_ms = now;
+        char gpJson[320];
+        if (gamepad.takeUiUpdate(gpJson, sizeof(gpJson))) webServer.broadcastText(gpJson);
+    }
+
+    // Other robots on the network (scan requested from the UI)
+    {
+        String robotsJson;
+        if (discovery.takeScanResult(robotsJson)) webServer.broadcastText(robotsJson.c_str());
+    }
+
+    // Nearby Bluetooth devices (only while a scan requested from the UI runs)
+    {
+        String nearbyJson;
+        if (BtNearby::takeUpdate(nearbyJson, BT_NEARBY_UPDATE_MS)) webServer.broadcastText(nearbyJson.c_str());
+    }
+
+    // Bluetooth device details (battery, signal, model…) for the Bluetooth tab
+    if (now - lastBtInfo_ms >= BT_INFO_INTERVAL_MS) {
+        lastBtInfo_ms = now;
+        broadcastBluetoothInfo();
+    }
+
     buzzer.update();
     webServer.update();
     ble.update();
+    gamepad.update();
+    updateStatusLed();
 
     // ── Boot button — hold 3s to clear WiFi credentials ───────────────────
     if (digitalRead(PIN_BOOT_BUTTON) == LOW) {

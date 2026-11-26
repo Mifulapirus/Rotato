@@ -30,6 +30,11 @@ static const BeepStep SEQ_WEAPON_OFF[] = {
     {784, 60}, {523, 120}
 };
 
+// Short two-note "nope" — a little error sound (~0.25 s)
+static const BeepStep SEQ_NOPE[] = {
+    {330, 70}, {0, 30}, {220, 140}
+};
+
 static const BeepStep SEQ_ERROR[] = {
     {220, 200}, {0, 100}, {220, 200}, {0, 100}, {220, 400}
 };
@@ -57,6 +62,10 @@ void BuzzerController::beepWeaponOn() {
 
 void BuzzerController::beepWeaponOff() {
     playSequence(SEQ_WEAPON_OFF, sizeof(SEQ_WEAPON_OFF) / sizeof(BeepStep));
+}
+
+void BuzzerController::beepNope() {
+    playSequence(SEQ_NOPE, sizeof(SEQ_NOPE) / sizeof(BeepStep));
 }
 
 void BuzzerController::beepError() {

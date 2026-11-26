@@ -32,6 +32,15 @@
 // Enable/disable BLE (NimBLE-Arduino — connects the Android app to the robot)
 #define BLE_ENABLED
 
+// Bluetooth game controller (Xbox Wireless Controller over BLE). See the
+// "Game Controller" section below for the button mapping and tuning.
+#define GAMEPAD_ENABLED
+
+// Blue LED on the D1 Mini module itself (GPIO2). The red LED next to it is
+// hard-wired to 3.3V (power indicator) and can't be controlled.
+// See the "On-board status LED" section below for what the blink patterns mean.
+#define HAS_ONBOARD_LED
+
 // ── Pin Definitions ──────────────────────────────────────────────────────────
 //
 // Rotato 2027 board — ESP32 D1 Mini (U2, ESP32-WROOM-32) + AT8236 (U1).
@@ -50,6 +59,7 @@
 //   I2C SDA              21    D2              J3 pin 4
 //   I2C SCL              22    D1              J3 pin 3
 //   BOOT button           0    —               on the D1 Mini module (if fitted)
+//   On-board blue LED     2    —               on the D1 Mini module (status)
 //
 #define PIN_BATTERY_ADC   36  // GPIO36 (ADC1_CH0) — input-only, no pull-ups
 #define PIN_LEFT_IN1      26  // AT8236 AIN1
@@ -62,6 +72,8 @@
 #define PIN_I2C_SDA       21  // J3 expansion connector — not used yet
 #define PIN_I2C_SCL       22  // J3 expansion connector — not used yet
 #define PIN_BOOT_BUTTON    0  // D1 Mini BOOT button (active LOW, hold 3s to clear WiFi)
+#define PIN_ONBOARD_LED    2  // D1 Mini blue LED (GPIO2 is a strapping pin — fine as output after boot)
+#define ONBOARD_LED_ACTIVE_HIGH true  // true = writing HIGH turns the LED on
 // #define PIN_SAFETY_SWITCH  ?  // No safety switch on this board (see HAS_SAFETY_SWITCH)
 
 // ── Drive motors — AT8236 H-bridge PWM ────────────────────────────────────────
@@ -202,3 +214,67 @@
 // ── Web Server ────────────────────────────────────────────────────────────────
 #define WEB_SERVER_PORT       80    // Standard HTTP port
 #define WS_STATUS_INTERVAL_MS 500  // How often to send status to browser (ms)
+
+// ── On-board status LED (D1 Mini blue LED, GPIO2) ─────────────────────────────
+//
+// The LED shows one pattern at a time; the highest-priority state wins:
+//
+//   Priority  State                          Pattern
+//   ────────  ─────────────────────────────  ──────────────────────────────────
+//   1         Weapon spinning                Fast strobe (10 flashes/s)
+//   2         ESC arming (first 2 s of boot) Rapid blink (5 flashes/s)
+//   3         Battery low (or no battery)    Double blink every second
+//   4         Controller pairing window open Slow blink (1 flash/s)
+//   5         Someone connected              Solid ON  (browser, BLE app or gamepad)
+//   6         Idle, nobody connected         Short "heartbeat" blip every 2 s
+//
+// The heartbeat also proves the firmware is running: a LED that is stuck
+// fully on or fully off with nobody connected means the firmware has hung.
+//
+#define STATUS_LED_LOW_BATT_PCT   15   // battery % at or below which "battery low" shows
+
+// ── Game Controller (Xbox Wireless Controller over Bluetooth LE) ──────────────
+//
+// Supported: Xbox Wireless Controller (Series X|S model 1914, and Xbox One
+// model 1708 updated to the 2021+ firmware with Bluetooth LE). Older Xbox One
+// firmware uses Classic Bluetooth only and will not show up — update it with
+// the Xbox Accessories app first.
+//
+// PAIRING: hold the small pair button on top of the controller until the Xbox
+// logo flashes fast. The robot accepts a NEW controller when:
+//   - no controller has been paired yet, or
+//   - during the first GAMEPAD_BOOT_PAIR_WINDOW_MS after power-on, or
+//   - after you press "Pair controller" in the web UI (Settings → Bluetooth).
+// Once paired, just press the Xbox button to reconnect — no pairing needed.
+// Outside those windows the robot ignores other people's controllers, so
+// several robots can share a room.
+//
+// BUTTON MAPPING:
+//   Left stick           Drive (arcade: up = forward, sideways = turn)
+//   Right stick X        Turn (only when GAMEPAD_SPLIT_STICKS is true)
+//   D-pad                Slow drive at GAMEPAD_DPAD_SPEED
+//   LB (hold)            Precision mode: drive scaled by GAMEPAD_PRECISION_SCALE
+//   RT (right trigger)   Weapon throttle — spins only while held (dead-man)
+//   B                    Weapon stop (also latches until RT is released)
+//   A                    Little error sound ("nope" beep)
+//
+// Safety: the weapon ignores RT until it has been fully released once after
+// connecting, and drive + weapon stop immediately if the controller disconnects.
+//
+#define GAMEPAD_NAME_FILTER          "Xbox"  // advertised name must contain this to pair
+#define GAMEPAD_BOOT_PAIR_WINDOW_MS  60000   // accept new controllers for 60 s after boot
+#define GAMEPAD_PAIR_WINDOW_MS       60000   // "Pair controller" button opens a 60 s window
+#define GAMEPAD_SPLIT_STICKS         false   // true = left stick Y drives, right stick X turns
+#define GAMEPAD_STICK_DEADZONE       0.12f   // ignore stick wobble near center (0–1)
+#define GAMEPAD_TRIGGER_DEADZONE     0.05f   // ignore trigger values below this (0–1)
+#define GAMEPAD_PRECISION_SCALE      0.4f    // drive multiplier while LB is held
+#define GAMEPAD_DPAD_SPEED           0.4f    // drive speed for D-pad driving
+#define GAMEPAD_SCAN_INTERVAL_MS     100     // BLE scan interval (ms)
+#define GAMEPAD_SCAN_WINDOW_MS       40      // time listening per interval (ms) — keeps WiFi responsive
+#define GAMEPAD_UI_INTERVAL_MS       30      // min time between live controller updates to the browser
+                                             // (~33/s; only sent when the input changed). The browser
+                                             // smooths between updates, so going lower gains little.
+#define BT_NEARBY_SCAN_MS            15000   // "Nearby devices" scan length (BLE tab)
+#define BT_NEARBY_UPDATE_MS          1000    // list refresh to the browser while scanning
+#define BT_INFO_INTERVAL_MS          2000    // how often the Bluetooth tab's device details
+                                             // (battery, signal, link…) are sent to the browser

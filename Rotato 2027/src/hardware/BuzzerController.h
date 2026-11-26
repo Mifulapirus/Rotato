@@ -47,6 +47,7 @@ public:
     void beepWeaponOn();    // Weapon activated (warning tone)
     void beepWeaponOff();   // Weapon deactivated
     void beepError();       // Something went wrong
+    void beepNope();        // Short "nope" (little error sound)
 
     // Must be called from loop() — advances the current beep sequence
     void update();
@@ -80,6 +81,7 @@ public:
     void beepWeaponOn()  {}
     void beepWeaponOff() {}
     void beepError()     {}
+    void beepNope()      {}
     void update()        {}
     bool isBusy() const  { return false; }
 };

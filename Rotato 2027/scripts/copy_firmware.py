@@ -3,11 +3,10 @@ import re
 import shutil
 
 # PlatformIO post-build script — runs after a successful firmware compile.
-# Copies the built firmware.bin to the project root directory and names it:
+# Copies the built firmware.bin to bin/ and names it after the firmware
+# version and the PCB revision it was built for:
 #
-#   rotato-2027-firmware-<MAJOR>.<MINOR>.<PATCH>.<BUILD>.bin
-#
-# e.g.  rotato-2027-firmware-0.1.0.125.bin
+#   rotato-2027-fw<MAJOR>.<BUILD>-pcb<REV>.bin     e.g. rotato-2027-fw2.0-pcb1.0.bin
 #
 # This makes it easy to drag-and-drop the latest binary into the OTA
 # upload page without digging inside .pio/build/.
@@ -15,21 +14,19 @@ Import("env")  # noqa: F821 — injected by SCons/PlatformIO
 
 
 def _read_version(src_dir):
-    """Return (major, minor, patch, build) from the auto-generated version_build.h."""
+    """Return (firmware version, pcb revision) from the auto-generated version_build.h."""
     header = os.path.join(src_dir, "version_build.h")
-    values = {"MAJOR": 0, "MINOR": 0, "PATCH": 0, "BUILD": 0}
+    fw, pcb = "0.0", "unknown"
     if os.path.exists(header):
-        with open(header, "r") as f:
+        with open(header, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
-        for key in values:
-            m = re.search(r"#define\s+FW_VERSION_{}\s+(\d+)".format(key), content)
-            if m:
-                values[key] = int(m.group(1))
-        # BUILD is stored under FW_BUILD_NUMBER
-        m = re.search(r"#define\s+FW_BUILD_NUMBER\s+(\d+)", content)
+        m = re.search(r'#define\s+FW_VERSION_FULL\s+"([^"]*)"', content)
         if m:
-            values["BUILD"] = int(m.group(1))
-    return values["MAJOR"], values["MINOR"], values["PATCH"], values["BUILD"]
+            fw = m.group(1)
+        m = re.search(r'#define\s+PCB_REVISION_STR\s+"([^"]*)"', content)
+        if m:
+            pcb = re.sub(r"[^A-Za-z0-9._-]", "_", m.group(1))
+    return fw, pcb
 
 
 def copy_firmware(source, target, env):  # noqa: ARG001
@@ -42,15 +39,14 @@ def copy_firmware(source, target, env):  # noqa: ARG001
         print("[copy_firmware] WARNING: firmware.bin not found at", src_bin)
         return
 
-    major, minor, patch, build = _read_version(src_dir)
-    version_str = "{}.{}.{}.{}".format(major, minor, patch, build)
-    dest_name   = "rotato-2027-firmware-{}.bin".format(version_str)
+    fw, pcb = _read_version(src_dir)
+    dest_name   = "rotato-2027-fw{}-pcb{}.bin".format(fw, pcb)
     bin_dir     = os.path.join(project_dir, "bin")
     os.makedirs(bin_dir, exist_ok=True)
     dest_path   = os.path.join(bin_dir, dest_name)
 
     shutil.copy2(src_bin, dest_path)
-    print("\n[copy_firmware] {} → {}\n".format(src_bin, dest_path))
+    print("\n[copy_firmware] {} -> {}\n".format(src_bin, dest_path))
 
 
 env.AddPostAction("$BUILD_DIR/firmware.bin", copy_firmware)  # noqa: F821

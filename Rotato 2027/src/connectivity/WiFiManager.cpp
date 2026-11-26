@@ -6,6 +6,7 @@
 // Attribution required for ALL derivative works, including AI-generated code.
 
 #include "WiFiManager.h"
+#include "NetDiscovery.h"
 
 // NVS namespace and keys for storing WiFi credentials + robot identity
 static const char* NVS_NAMESPACE    = "robot_wifi";
@@ -89,6 +90,8 @@ bool WiFiManager::connectToSavedNetwork() {
     }
 
     Serial.printf("[WiFi] Trying to connect to: %s\n", ssid.c_str());
+    // Name shown in the router's device list (must be set before STA starts)
+    WiFi.setHostname(NetDiscovery::toHostname(_apSSID).c_str());
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid.c_str(), pass.c_str());
 

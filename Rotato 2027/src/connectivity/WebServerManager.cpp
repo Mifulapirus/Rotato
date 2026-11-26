@@ -136,17 +136,17 @@ void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVolt
     doc["ip"]             = ipAddress;
     doc["weapon"]         = weaponActive;
     doc["weaponSpeed"]    = weaponSpeedPct;   // current ramped output 0–100
-    doc["fw"]             = FW_VERSION_FULL;
+    doc["fw"]             = FW_VERSION_FULL;    // "2.0" = MAJOR.BUILD
+    doc["pcb"]            = PCB_REVISION_STR;   // board revision this firmware targets
     doc["name"]           = robotName;
     doc["escReady"]       = escReady;
     doc["escCalib"]       = escCalib;
-    doc["safety"]       = safetyOk;
-    doc["ip"]           = ipAddress;
-    doc["weapon"]       = weaponActive;
-    doc["fw"]           = FW_VERSION_FULL;
-    doc["name"]         = robotName;
-    doc["escReady"]     = escReady;
-    doc["escCalib"]     = escCalib;
+    doc["gamepad"]        = _gamepadState;
+    doc["gamepadName"]    = _gamepadName;
+    if (_hostname.length()) {
+        doc["host"]       = _hostname;
+        doc["hostTaken"]  = _hostTaken;
+    }
 
     String json;
     serializeJson(doc, json);
@@ -303,5 +303,21 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             if (curve > 2) curve = 0;
             Serial.printf("[Web] Weapon accel: ramp=%u ms, curve=%u\n", rampMs, curve);
             if (_weaponAccelCallback) _weaponAccelCallback(rampMs, curve);
+        }
+        // ── Gamepad: {"type":"gamepad_pair"} / {"type":"gamepad_forget"} ─────
+        else if (strcmp(type, "gamepad_pair") == 0) {
+            if (_gamepadPairCallback) _gamepadPairCallback();
+        }
+        else if (strcmp(type, "gamepad_forget") == 0) {
+            Serial.println("[Web] Forget paired controllers requested.");
+            if (_gamepadForgetCallback) _gamepadForgetCallback();
+        }
+        // ── {"type":"robots_scan"} — look for other robots on the network ─────
+        else if (strcmp(type, "robots_scan") == 0) {
+            if (_robotsScanCallback) _robotsScanCallback();
+        }
+        // ── {"type":"bt_scan"} — list nearby Bluetooth LE devices ─────────────
+        else if (strcmp(type, "bt_scan") == 0) {
+            if (_btScanCallback) _btScanCallback();
         }    }
 }

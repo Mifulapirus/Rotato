@@ -44,7 +44,7 @@ else:
 
     ratio = 100.0 * (1.0 - len(gz) / len(raw))
     print(
-        "\n[embed_web_ui] index.html  {} bytes  →  {} bytes gzip ({:.0f}% smaller).\n".format(
+        "\n[embed_web_ui] index.html  {} bytes  ->  {} bytes gzip ({:.0f}% smaller).\n".format(
             len(raw), len(gz), ratio
         )
     )

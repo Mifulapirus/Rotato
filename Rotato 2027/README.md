@@ -52,10 +52,44 @@ Open a browser and go to: **http://192.168.4.1**
 
 You'll see the robot controller UI with a joystick, weapon button, and status panel.
 
+### Driving with an Xbox controller (optional)
+You can drive with an **Xbox Wireless Controller** over Bluetooth. It works with the Series X|S controller, and with the Xbox One controller once its firmware has been updated (2021 or later).
+
+1. Power on the robot.
+2. On the controller, hold the small **pair button** on top until the Xbox logo flashes quickly.
+3. Wait a few seconds. The robot beeps and the blue LED turns solid when the controller connects.
+
+After the first pairing, just press the **Xbox button** to reconnect.
+
+The robot accepts a *new* controller only in these cases: it has never paired one, it powered on less than 60 s ago, or you pressed **Settings → Bluetooth → Pair controller** in the web UI. This stops a robot from grabbing someone else's controller. **Forget controllers** in the same panel removes all paired controllers.
+
+| Control | Action |
+|---------|--------|
+| Left stick | Drive (up = forward, sideways = turn) |
+| D-pad | Slow drive |
+| Hold LB | Precision mode (slower, finer control) |
+| RT (right trigger) | Weapon throttle. The weapon spins only while you hold it |
+| B | Stop the weapon (release RT to re-enable it) |
+| A | Little error sound |
+
+Safety: the weapon ignores RT until you have fully released it once after connecting. If the controller disconnects, the drive motors and weapon stop. You can tune the mapping in `config.h` under "Game Controller".
+
+**Settings → BLE → Nearby Devices → Scan** lists every Bluetooth LE device the robot can hear (put the device in pairing mode first) and says whether Rotato can use it. If a device never appears there, it's classic-Bluetooth-only and can't connect.
+
+**Settings → BLE** also shows what the controller reports about itself: model, serial number, firmware version, battery, signal strength and connection quality, plus a live view of every stick, trigger and button, and the raw data it sends. If the controller disconnects, the panel keeps the last details and shows why it dropped (for example out of range or turned off).
+
 ### Connecting to your own WiFi (optional)
 Open the Settings panel in the web UI, enter your WiFi network name and password, and save. The robot will reboot and join your network. If it can't connect, it falls back to its own hotspot automatically.
 
 **To reset WiFi credentials:** Hold the BOOT button (small button on the ESP32 board) for 3 seconds after the robot has fully booted.
+
+### Opening the robot by name instead of IP
+Once the robot is on your WiFi, open **http://&lt;robot-name&gt;.local**, for example `http://rotato-7c19.local`. The address comes from the robot name: rename the robot "Rotato" (Settings → Identity) and it becomes `http://rotato.local`. The current address is shown at the top of the page and in Settings → WiFi.
+
+- **Several robots on the same network:** give each robot its own name. The default names (Rotato-XXXX, from the chip's MAC address) never clash. If you give two robots the same name, the second one notices the address is taken and keeps its default address instead.
+- **Settings → WiFi → Robots on this network** lists every Rotato on the network with an **Open** button.
+- Your router's device list shows the robot by the same name.
+- `.local` names work on Windows 10+, macOS, iOS and Linux. Some Android browsers don't support them; use the IP address there (it's shown in the same places). On Windows the first visit can take a few seconds to resolve.
 
 ---
 
@@ -76,6 +110,21 @@ Open the Settings panel in the web UI, enter your WiFi network name and password
 | GPIO21 | D2 | J3 | I2C SDA (expansion, not used yet) |
 | GPIO22 | D1 | J3 | I2C SCL (expansion, not used yet) |
 | GPIO0 | — | — | BOOT button on the D1 Mini, if fitted (hold 3s to reset WiFi) |
+| GPIO2 | — | — | Blue status LED on the D1 Mini (see below) |
+
+### Status LED (blue LED on the D1 Mini)
+The D1 Mini has two LEDs. The **red** one is wired straight to power and is always on. The firmware controls the **blue** one. If several of these apply at once, it shows the one highest in this list:
+
+| What you see | Meaning |
+|--------------|---------|
+| Very fast strobe | Weapon is spinning |
+| Rapid blink (first 2 s after power-on) | Weapon ESC is arming |
+| Double blink every second | Battery low (≤15%) or no battery connected |
+| Slow blink (on 0.5 s / off 0.5 s) | Waiting to pair a game controller |
+| Solid on | Someone is connected (browser, phone app or game controller) |
+| Short blip every 2 s | Running normally, nobody connected |
+
+If the LED stays fully on or fully off while nothing is connected, the firmware has frozen. Power-cycle the robot.
 
 ### Battery
 - Type: **2S or 3S LiPo** (selectable in the web UI; default 3S)
@@ -137,6 +186,17 @@ After that, for firmware-only changes you only need:
 pio run --target upload
 ```
 
+### Updating over WiFi (no cable)
+Once the robot has firmware on it and is on your network, you can update it wirelessly:
+
+```bash
+pio run -e d1_mini32_ota --target upload
+```
+
+In VS Code, use the PlatformIO sidebar: **Project Tasks → d1_mini32_ota → Upload**. Before that, set `upload_port` in the `[env:d1_mini32_ota]` section of `platformio.ini` to your robot's IP address. The IP is printed on the serial monitor at boot. To update a different robot one time, add `--upload-port <ip>`. When your computer is joined to the robot's own hotspot, the IP is `192.168.4.1`.
+
+The upload takes about 30 seconds. The robot reboots on its own, and the tool checks that it comes back running the build you just compiled. A brand-new board still needs its first flash over USB.
+
 ### Other Useful Commands
 
 ```bash
@@ -192,15 +252,15 @@ For a gentler robot (beginners), use the **Speed Limit** slider in the web UI in
 | File | What it does | Should you edit it? |
 |------|-------------|---------------------|
 | `src/config.h` | All hardware settings | ✅ Yes — start here |
-| `src/version.h` | Firmware version number | ✅ Yes — bump when releasing |
+| `src/version.h` | Firmware `MAJOR` and fallback PCB revision. Version shown is `MAJOR.BUILD` (2.0, 2.1, …); the PCB revision comes from the KiCad board's title block when `Electronics/` is present | ✅ Yes — bump MAJOR for big releases |
 | `src/main.cpp` | Wires everything together | ✅ Yes — for new features |
-| `src/hardware/*.h/.cpp` | Motor, buzzer, battery, safety drivers | ✅ Yes |
-| `src/connectivity/*.h/.cpp` | WiFi, web server, BLE | ✅ Yes |
+| `src/hardware/*.h/.cpp` | Motor, buzzer, battery, safety, status LED drivers | ✅ Yes |
+| `src/connectivity/*.h/.cpp` | WiFi, web server, BLE, game controller | ✅ Yes |
 | `data/index.html` | The web UI running in your browser | ✅ Yes |
 | `src/version_build.h` | Auto-generated — build timestamp | ❌ No |
 | `src/web_ui_html.h` | Auto-generated — embedded web UI | ❌ No |
-| `build_number.txt` | Auto-incremented build counter | ❌ No |
-| `scripts/*.py` | Build pipeline scripts | ⚠️ Advanced only |
+| `build_number.txt` | Last build made, as `MAJOR.BUILD` (empty = next build is `MAJOR.0`; restarts at 0 when MAJOR changes) | ❌ No |
+| `scripts/*.py` | Build pipeline scripts (incl. `ota_upload.py` for WiFi updates) | ⚠️ Advanced only |
 
 ---
 

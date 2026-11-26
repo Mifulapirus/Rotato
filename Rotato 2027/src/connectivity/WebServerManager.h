@@ -21,6 +21,8 @@
 //   Weapon:  {"type":"weapon","active":true}
 //   WiFi:    {"type":"settings","ssid":"MyNetwork","pass":"password123"}
 //   Forget:  {"type":"forget"}
+//   Gamepad: {"type":"gamepad_pair"}    — open the controller pairing window
+//            {"type":"gamepad_forget"}  — forget all paired controllers
 //
 // JSON PROTOCOL (Robot → Browser, every 500ms):
 //   {"battery":85,"safety":true,"ip":"192.168.4.1","weapon":false,"fw":"1.0.0+42"}
@@ -51,6 +53,7 @@ using ApPasswordCallback  = std::function<void(const String& pass)>;
 using BatteryCalibCallback  = std::function<void(float ratio)>;
 using BatteryCellsCallback  = std::function<void(uint8_t cells)>;
 using EscCalibrateCallback  = std::function<void()>;  // Trigger full-range ESC calibration
+using GamepadCommandCallback = std::function<void()>; // Gamepad pair / forget
 
 class WebServerManager {
 public:
@@ -74,6 +77,23 @@ public:
     void onBatteryCalib(BatteryCalibCallback cb)    { _batteryCalibCallback = cb; }
     void onBatteryCells(BatteryCellsCallback cb)    { _batteryCellsCallback = cb; }
     void onEscCalibrate(EscCalibrateCallback cb)    { _escCalibrateCallback = cb; }
+    void onGamepadPair(GamepadCommandCallback cb)   { _gamepadPairCallback = cb; }
+    void onGamepadForget(GamepadCommandCallback cb) { _gamepadForgetCallback = cb; }
+    void onRobotsScan(GamepadCommandCallback cb)    { _robotsScanCallback = cb; }
+    void onBtScan(GamepadCommandCallback cb)        { _btScanCallback = cb; }
+
+    // mDNS address shown in the UI ("rotato-7c1a.local"); taken = preferred name was in use.
+    void setHostname(const String& host, bool taken) { _hostname = host; _hostTaken = taken; }
+
+    // Game controller state, included in the next status broadcast.
+    //   state: "disabled" | "searching" | "pairing" | "connecting" | "connected"
+    void setGamepadStatus(const char* state, const String& name) { _gamepadState = state; _gamepadName = name; }
+
+    // Send a pre-built JSON message to every connected browser (no-op if none).
+    void broadcastText(const char* json) { if (_ws.count() > 0) _ws.textAll(json); }
+
+    // Number of browsers currently connected over WebSocket.
+    size_t clientCount() { return _ws.count(); }
 
     // Send a status JSON to all connected browser clients.
     // Call this periodically from loop() — e.g. every 500ms.
@@ -101,6 +121,14 @@ private:
     BatteryCalibCallback  _batteryCalibCallback;
     BatteryCellsCallback  _batteryCellsCallback;
     EscCalibrateCallback  _escCalibrateCallback;
+    GamepadCommandCallback _gamepadPairCallback;
+    GamepadCommandCallback _gamepadForgetCallback;
+    GamepadCommandCallback _robotsScanCallback;
+    GamepadCommandCallback _btScanCallback;
+    String                _hostname;
+    bool                  _hostTaken = false;
+    const char*           _gamepadState = "disabled";
+    String                _gamepadName;
 
     // Handle incoming WebSocket messages
     void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);
