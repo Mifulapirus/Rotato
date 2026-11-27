@@ -35,6 +35,16 @@ static const BeepStep SEQ_NOPE[] = {
     {330, 70}, {0, 30}, {220, 140}
 };
 
+// Precision mode (LB held): three quick high ticks in, one low blip out —
+// short so they don't get in the way while driving, and unlike any other sound.
+static const BeepStep SEQ_PRECISION_ON[] = {
+    {2637, 25}, {0, 25}, {2637, 25}, {0, 25}, {2637, 25}
+};
+
+static const BeepStep SEQ_PRECISION_OFF[] = {
+    {1047, 60}
+};
+
 static const BeepStep SEQ_ERROR[] = {
     {220, 200}, {0, 100}, {220, 200}, {0, 100}, {220, 400}
 };
@@ -66,6 +76,14 @@ void BuzzerController::beepWeaponOff() {
 
 void BuzzerController::beepNope() {
     playSequence(SEQ_NOPE, sizeof(SEQ_NOPE) / sizeof(BeepStep));
+}
+
+void BuzzerController::beepPrecisionOn() {
+    playSequence(SEQ_PRECISION_ON, sizeof(SEQ_PRECISION_ON) / sizeof(BeepStep));
+}
+
+void BuzzerController::beepPrecisionOff() {
+    playSequence(SEQ_PRECISION_OFF, sizeof(SEQ_PRECISION_OFF) / sizeof(BeepStep));
 }
 
 void BuzzerController::beepError() {

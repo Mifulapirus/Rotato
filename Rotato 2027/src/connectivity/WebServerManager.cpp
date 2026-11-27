@@ -138,11 +138,20 @@ void WebServerManager::broadcastStatus(uint8_t batteryPercent, float batteryVolt
     doc["weaponSpeed"]    = weaponSpeedPct;   // current ramped output 0–100
     doc["fw"]             = FW_VERSION_FULL;    // "2.0" = MAJOR.BUILD
     doc["pcb"]            = PCB_REVISION_STR;   // board revision this firmware targets
+    doc["built"]          = FW_BUILD_DATE " " FW_BUILD_TIME;
+#ifdef ARDUINO_BOARD
+    doc["board"]          = ARDUINO_BOARD;           // e.g. "WEMOS D1 MINI ESP32"
+#endif
+    doc["cpu"]            = ESP.getChipModel();      // e.g. "ESP32-D0WD-V3"
+    doc["cpuRev"]         = ESP.getChipRevision();   // silicon revision, e.g. 3
     doc["name"]           = robotName;
     doc["escReady"]       = escReady;
     doc["escCalib"]       = escCalib;
     doc["gamepad"]        = _gamepadState;
     doc["gamepadName"]    = _gamepadName;
+    doc["driveReversed"]  = _driveReversed;
+    doc["weaponRampMs"]   = _weaponRampMs;
+    doc["weaponCurve"]    = _weaponCurve;
     if (_hostname.length()) {
         doc["host"]       = _hostname;
         doc["hostTaken"]  = _hostTaken;
@@ -224,6 +233,18 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
                 _settingsCallback(ssid, pass);
             }
         }
+        // ── Network tab Save & reboot ───────────────────────────────────────────
+        // {"type":"network_save","ssid":"","pass":"","name":"","resetName":false,"apPass":""}
+        else if (strcmp(type, "network_save") == 0) {
+            String ssid   = doc["ssid"]   | "";
+            String pass   = doc["pass"]   | "";
+            String name   = doc["name"]   | "";
+            String apPass = doc["apPass"] | "";
+            bool   reset  = doc["resetName"] | false;
+            name.trim();
+            Serial.println("[Web] Network settings save requested.");
+            if (_networkSaveCallback) _networkSaveCallback(ssid, pass, name, reset, apPass);
+        }
         // ── Forget command: {"type":"forget"} ──────────────────────────────────
         else if (strcmp(type, "forget") == 0) {
             Serial.println("[Web] Forget WiFi command received from browser.");
@@ -302,6 +323,8 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
             uint8_t  curve  = (uint8_t) (doc["curve"]   | (int)WEAPON_CURVE_DEFAULT);
             if (curve > 2) curve = 0;
             Serial.printf("[Web] Weapon accel: ramp=%u ms, curve=%u\n", rampMs, curve);
+            _weaponRampMs = rampMs;
+            _weaponCurve  = curve;
             if (_weaponAccelCallback) _weaponAccelCallback(rampMs, curve);
         }
         // ── Gamepad: {"type":"gamepad_pair"} / {"type":"gamepad_forget"} ─────
@@ -311,6 +334,12 @@ void WebServerManager::handleWebSocketMessage(void* arg, uint8_t* data, size_t l
         else if (strcmp(type, "gamepad_forget") == 0) {
             Serial.println("[Web] Forget paired controllers requested.");
             if (_gamepadForgetCallback) _gamepadForgetCallback();
+        }
+        // ── Invert motors direction: {"type":"drive_reverse","reversed":true} ──
+        else if (strcmp(type, "drive_reverse") == 0) {
+            bool on = doc["reversed"] | false;
+            _driveReversed = on;
+            if (_driveReverseCallback) _driveReverseCallback(on);
         }
         // ── {"type":"robots_scan"} — look for other robots on the network ─────
         else if (strcmp(type, "robots_scan") == 0) {

@@ -182,9 +182,11 @@ void GamepadManager::applyState(const State& s) {
     _uiDirty   = true;
 
     // ── Button presses (edge-triggered) ──────────────────────────────────────
-    uint32_t pressed = s.buttons & ~_prevButtons;
+    uint32_t pressed  = s.buttons & ~_prevButtons;
+    uint32_t released = _prevButtons & ~s.buttons;
     _prevButtons = s.buttons;
-    if (pressed && _buttonCallback) _buttonCallback(pressed);
+    if (pressed  && _buttonCallback)  _buttonCallback(pressed);
+    if (released && _releaseCallback) _releaseCallback(released);
 
     // ── Drive ────────────────────────────────────────────────────────────────
     float y = applyDeadzone(s.ly, GAMEPAD_STICK_DEADZONE);

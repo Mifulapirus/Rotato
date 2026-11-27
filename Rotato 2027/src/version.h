@@ -19,4 +19,4 @@
 // =============================================================================
 
 #define FW_VERSION_MAJOR  2
-#define PCB_REVISION      "1.0"     // first manufactured Rotato 2027 board
+#define PCB_REVISION      "2.0"     // Rotato 2nd generation, first board revision

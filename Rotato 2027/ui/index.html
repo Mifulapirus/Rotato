@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Rotato Controller</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="0" y1="0" x2="1" y2="1"%3E%3Cstop offset="0" stop-color="#ff2d78"/%3E%3Cstop offset="1" stop-color="#ff9a3c"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="64" height="64" rx="12" fill="#0a0a0c"/%3E%3Cg transform="translate%285 5%29 scale%282.25%29" fill="none" stroke="url%28#g%29" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="12" r="2.6"/%3E%3Cpath d="M12 9.4V3.2M14.3 13.3l5.4 3.1M9.7 13.3l-5.4 3.1"/%3E%3Cpath d="M12 3.2a9 9 0 0 1 7.7 13.2M4.3 16.4A9 9 0 0 1 12 3.2" opacity=".6"/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmYyZDc4Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZmY5YTNjIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMwYTBhMGMiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg1IDUpIHNjYWxlKDIuMjUpIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjZykiIHN0cm9rZS13aWR0aD0iMi4zIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjIuNiIvPjxwYXRoIGQ9Ik0xMiA5LjRWMy4yTTE0LjMgMTMuM2w1LjQgMy4xTTkuNyAxMy4zbC01LjQgMy4xIi8+PHBhdGggZD0iTTEyIDMuMmE5IDkgMCAwIDEgNy43IDEzLjJNNC4zIDE2LjRBOSA5IDAgMCAxIDEyIDMuMiIgb3BhY2l0eT0iLjYiLz48L2c+PC9zdmc+">
   <link rel="apple-touch-icon" href="data:image/png;base64,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NFze2LZty9y5cxP76fEc8+fPww0Y0HAZAxMgxQzgKgfGV18dmTdvfmzorz+v4RJAEMSePbsrKianU7iHr7iiYs2a20DDZQlc9FxmgEA5MNraLixdek1NTQ1ouJwwZsyYTz7Z5na7uIlCcmCcOnVq4cKru7q09YQvF+Co144dn48dO1aQLjHAGGd69dUNOub74RqGP3BB4+IWMwPkRp9fc83Sp556AjRcBnjmmT/j4pY8JDs14a677vrJT34MGoY1fvGLn99xxx1yRyV8jhTwoccee/zhhx8BDcMRv/71A//6r/cjhOQyZCJHAn//+wdr1/6T399PH4DR0A8wGo0bNryyatWqzNl6JgfGoUOHbrvt23V1daBh6KO0tPTNN1+fMmVKjzmzmg5ZWVmJmzpz5swBDUMcixZdvXPn9myYAdnPlXW5XJs3f/zUU0/m5uaChiEIXHBPPvnEe++9i4syy59kZVa4aG9vX7/+D88993w0GgUNQwEkSf7gB3dh99PpdPbqh70mRwLV1SfuueeeHTt2gobBjWXLlj3++GMTJoyH3uMSyZHAu++++8or//nxx5tAw+DDypUr7rrrzr5MLegTORLwer0fffTxe++9t2nTZp+vXz9fqEEAi8WyYsWKG25Yfd11q3Jy+vr1PgXIwQXmx549e1pbW3HvLvZOLlzA2wstLa2gQWnk5+c5ndi5dDmZ/5z5+flz587FagHK4X8BAAD//+T/AgkAAAAGSURBVAMAtTqPTHZDPL8AAAAASUVORK5CYII=">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -401,11 +401,10 @@
     @media (min-width: 1000px) and (min-height: 521px) {
       /* Masonry columns: each card is only as tall as its content, no gaps */
       .tab-content.active { display: block; columns: 2; column-gap: 12px; max-width: none; }
-      .tab-content > .card { break-inside: avoid; margin-bottom: 12px; }
+      .tab-content > .card, .tab-content > .btn-row { break-inside: avoid; margin-bottom: 12px; }
       .tab-content > .card.wide { column-span: all; }
-      #fw-line { max-width: none; }
     }
-    #fw-line { max-width: 760px; margin-top: 30px; text-align: center; color: var(--dim); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
+    #fw-line { margin-top: 30px; text-align: center; color: var(--dim); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
     #fw-line .fw-sep { margin: 0 8px; opacity: .5; }
 
     @media (max-width: 760px), (max-height: 520px) {
@@ -450,6 +449,23 @@
     .card.danger h3 .ic { color: var(--danger); }
     .setting-desc, .card-desc { color: var(--muted); font-size: .87rem; line-height: 1.55; }
     .setting-desc em, .card-desc em { color: var(--ink); font-style: normal; font-weight: 650; }
+    .info {
+      flex: none; width: 18px; height: 18px; padding: 0; border-radius: 50%;
+      border: 1.5px solid var(--muted); background: transparent; color: var(--muted);
+      font: 700 11px/1 var(--font); letter-spacing: 0; text-transform: none; cursor: help;
+      display: inline-grid; place-items: center;
+    }
+    .field-label .info { display: inline-grid; margin-left: 8px; width: 16px; height: 16px; font-size: 10px; vertical-align: -2px; }
+    .info:hover, .info:focus-visible, .info.open { border-color: var(--ink); color: var(--ink); outline: none; }
+    #tip-pop {
+      position: fixed; z-index: 1000; max-width: min(300px, calc(100vw - 16px)); padding: 10px 13px;
+      background: var(--hi); color: var(--on-hi); border-radius: var(--radius);
+      font: 400 .85rem/1.5 var(--font); box-shadow: 0 8px 24px rgba(0,0,0,.45);
+      pointer-events: none; opacity: 0; transition: opacity .12s;
+    }
+    #tip-pop.show { opacity: 1; }
+    #tip-pop em { font-style: normal; font-weight: 700; }
+    .setting-desc a { color: var(--cyan); }
     .tip { display: flex; gap: 10px; padding: 11px 14px; border-left: 3px solid var(--cyan); background: var(--cyan-soft); color: var(--ink); font-size: .85rem; }
     .tip.warn { border-left-color: var(--warn); background: var(--warn-soft); }
     .field { display: flex; flex-direction: column; gap: 8px; }
@@ -550,7 +566,14 @@
     .ota-progress-pct { font: 700 1rem var(--display); min-width: 4ch; text-align: right; }
     .ota-status-msg { font-size: .9rem; font-weight: 650; }
     .version-big { font: 700 3rem/1 var(--display); font-stretch: condensed; letter-spacing: .01em; text-transform: uppercase; }
-    #ota-current-version { font-family: var(--mono); color: var(--muted); font-size: .85rem; }
+    .ver-kv { font-size: .95rem; gap: 8px 20px; }
+    .ver-kv .h {
+      grid-column: 1 / -1; margin-top: 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line);
+      font: 700 .8rem var(--font); letter-spacing: .2em; text-transform: uppercase; color: var(--gold);
+    }
+    .ver-kv .h:first-child { margin-top: 0; }
+    .ver-kv .k { font: 700 .95rem var(--display); letter-spacing: .1em; text-transform: uppercase; min-width: 6.5em; }
+    .ver-kv .v { color: var(--ink); }
 
     /* ── Game controller live view ─────────────────────────────────────── */
     .gp-live { padding: 2px 14px; background: var(--surface-2); transition: opacity .2s; }
@@ -770,8 +793,8 @@
               <div class="setting-desc">Ignores tiny movements near the center of the stick.</div>
             </div>
             <div class="toggle-row">
-              <div class="t-text"><span class="t-title">Invert Y axis</span><span class="setting-desc">Push the stick down to drive forward</span></div>
-              <label class="toggle-switch"><input type="checkbox" id="invert-y"><span class="toggle-track"></span></label>
+              <div class="t-text"><span class="t-title">Invert Motors Direction</span></div>
+              <label class="toggle-switch"><input type="checkbox" id="drive-reversed"><span class="toggle-track"></span></label>
             </div>
             <button class="s-btn-primary" id="drive-apply">Apply drive settings</button>
           </div>
@@ -798,12 +821,10 @@
               <h3><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>ESC status</h3>
               <span id="esc-init-status" class="esc-status-pill esc-status-warn">● Connecting…</span>
             </div>
-            <div class="setting-desc">At power-on the robot holds minimum throttle for 2 seconds so the ESC arms. The weapon stays locked until that's done.</div>
           </div>
 
           <div class="card weapon">
             <h3><span class="ic"><svg class="i"><use href="#i-sliders"/></svg></span>Acceleration</h3>
-            <div class="setting-desc">How quickly the weapon spins up and down, for both the button and the slider.</div>
             <div class="field">
               <div class="field-label">Ramp time</div>
               <div class="radio-group">
@@ -856,12 +877,10 @@
 
           <div class="card">
             <div class="card-head">
-              <h3><span class="ic"><svg class="i"><use href="#i-pad"/></svg></span>Game controller</h3>
+              <h3><span class="ic"><svg class="i"><use href="#i-pad"/></svg></span>Game controller<button type="button" class="info" aria-label="More info" data-tip="To pair: press &lt;em&gt;Pair controller&lt;/em&gt;, then hold the small pair button on top of the controller until the Xbox logo flashes fast. After that, the Xbox button reconnects it automatically.">i</button></h3>
               <div class="row"><span class="bt-batt" id="gamepad-batt"></span><span id="gamepad-status" class="esc-status-pill esc-status-warn">● Connecting…</span></div>
             </div>
             <div class="setting-desc"><b id="gamepad-name">Xbox Wireless Controller</b></div>
-            <div class="setting-desc">To pair: press <em>Pair controller</em>, then hold the small pair button on top of the controller until the Xbox logo flashes fast. After that, the Xbox button reconnects it automatically.</div>
-            <div class="setting-desc">Left stick = drive · D-pad = slow drive · hold LB = precision · RT = weapon (only while held) · B = weapon stop · A = error sound</div>
             <div class="btn-row">
               <button class="s-btn-primary" id="gamepad-pair">🎮 Pair controller</button>
               <button class="s-btn-danger" id="gamepad-forget">Forget controllers</button>
@@ -951,13 +970,12 @@
         <!-- ── Network ────────────────────────────────────────────────── -->
         <div class="tab-content" id="tab-wifi">
           <div class="card">
-            <h3><span class="ic"><svg class="i"><use href="#i-net"/></svg></span>Address on your network</h3>
+            <h3><span class="ic"><svg class="i"><use href="#i-net"/></svg></span>Address on your network<button type="button" class="info" aria-label="More info" data-tip="The address comes from the robot’s name: name it “Rotato” to use &lt;em&gt;rotato.local&lt;/em&gt;. Each robot needs its own name. The default names (Rotato-XXXX) are always unique.">i</button></h3>
             <div class="kv">
               <span class="k">Name</span><span class="v"><a id="net-host" href="#">—</a></span>
               <span class="k">IP</span><span class="v" id="net-ip">—</span>
             </div>
-            <div class="tip warn" id="net-taken" style="display:none">⚠ <span>Another device already uses the address for this robot's name, so the robot kept its unique default address. Give it a different name in <em>Robot</em> to change it.</span></div>
-            <div class="setting-desc">The address comes from the robot's name: name it "Rotato" to use <em>rotato.local</em>. Each robot needs its own name. The default names (Rotato-XXXX) are always unique.</div>
+            <div class="tip warn" id="net-taken" style="display:none">⚠ <span>Another device already uses the address for this robot's name, so the robot kept its unique default address. Give it a different name below to change it.</span></div>
           </div>
 
           <div class="card">
@@ -967,15 +985,25 @@
           </div>
 
           <div class="card">
-            <h3><span class="ic"><svg class="i"><use href="#i-wifi"/></svg></span>Join your WiFi</h3>
-            <div class="setting-desc">The robot reboots and joins your network. If it can't connect, it goes back to its own hotspot.</div>
+            <h3><span class="ic"><svg class="i"><use href="#i-wifi"/></svg></span>Name &amp; WiFi<button type="button" class="info" aria-label="More info" data-tip="Changes take effect after a reboot. If the robot can’t join your WiFi, it goes back to its own hotspot.">i</button></h3>
             <div class="field">
-              <div class="field-label">Network name (SSID)</div>
-              <input class="settings-input" type="text" id="wifi-ssid" placeholder="WiFi network name" autocomplete="off">
+              <div class="field-label">Robot name<button type="button" class="info" aria-label="More info" data-tip="Used for the robot’s hotspot, Bluetooth name, page title and network address (&lt;em&gt;name.local&lt;/em&gt;). Leave it empty to go back to the default name from the chip (Rotato-XXXX).">i</button></div>
+              <input class="settings-input" type="text" id="identity-name" placeholder="Default name (Rotato-XXXX)" maxlength="32" autocomplete="off">
+              <span class="field-error" id="identity-name-error"></span>
             </div>
             <div class="field">
-              <div class="field-label">Password</div>
+              <div class="field-label">Hotspot password</div>
+              <input class="settings-input" type="password" id="identity-ap-pass" placeholder="8–63 characters (leave blank to keep it)" maxlength="63" autocomplete="new-password">
+              <span class="field-error" id="identity-pass-error"></span>
+            </div>
+            <div class="field">
+              <div class="field-label">WiFi network (SSID)</div>
+              <input class="settings-input" type="text" id="wifi-ssid" placeholder="Leave blank to keep the current one" autocomplete="off">
+            </div>
+            <div class="field">
+              <div class="field-label">WiFi password</div>
               <input class="settings-input" type="password" id="wifi-pass" placeholder="WiFi password" autocomplete="off">
+              <span class="field-error" id="wifi-error"></span>
             </div>
             <div class="btn-row">
               <button class="s-btn-primary" id="wifi-save">Save &amp; reboot</button>
@@ -987,23 +1015,8 @@
         <!-- ── Robot (identity) ───────────────────────────────────────── -->
         <div class="tab-content" id="tab-identity">
           <div class="card">
-            <h3><span class="ic"><svg class="i"><use href="#i-bot"/></svg></span>Name</h3>
-            <div class="setting-desc">Used for the robot's hotspot, Bluetooth name, page title and network address (<em>name.local</em>). The default comes from the chip (Rotato-XXXX).</div>
-            <div class="field">
-              <input class="settings-input" type="text" id="identity-name" placeholder="e.g. BladeRunner" maxlength="32" autocomplete="off">
-              <span class="field-error" id="identity-name-error"></span>
-            </div>
-          </div>
-          <div class="card">
-            <h3><span class="ic"><svg class="i"><use href="#i-key"/></svg></span>Hotspot password</h3>
-            <div class="field">
-              <input class="settings-input" type="password" id="identity-ap-pass" placeholder="8–63 characters (leave blank to keep it)" maxlength="63" autocomplete="new-password">
-              <span class="field-error" id="identity-pass-error"></span>
-            </div>
-          </div>
-          <div class="btn-row">
-            <button class="s-btn-primary" id="identity-save">Save &amp; reboot</button>
-            <button class="s-btn-danger" id="identity-reset">Reset to default name</button>
+            <h3><span class="ic"><svg class="i"><use href="#i-gear"/></svg></span>Need parts?</h3>
+            <div class="setting-desc">Contact the Rotato team at <a href="mailto:rotato@thehomelab.dev">rotato@thehomelab.dev</a></div>
           </div>
         </div>
 
@@ -1027,8 +1040,7 @@
           </div>
 
           <div class="card">
-            <h3><span class="ic"><svg class="i"><use href="#i-gauge"/></svg></span>Calibrate from a multimeter</h3>
-            <div class="setting-desc">Measure the battery with a voltmeter and enter the reading. The correct ratio is calculated for you.</div>
+            <h3><span class="ic"><svg class="i"><use href="#i-gauge"/></svg></span>Calibrate from a multimeter<button type="button" class="info" aria-label="More info" data-tip="Measure the battery with a voltmeter and enter the reading. The correct ratio is calculated for you.">i</button></h3>
             <div class="row">
               <input class="settings-input mono" type="number" id="batt-measured-v" step="0.01" placeholder="Measured volts, e.g. 11.82" style="flex:1; min-width:160px">
               <button class="s-btn-ghost" id="batt-calc-btn">⟳ Calculate</button>
@@ -1038,7 +1050,6 @@
 
           <div class="card">
             <h3><span class="ic"><svg class="i"><use href="#i-sliders"/></svg></span>Divider ratio</h3>
-            <div class="setting-desc">Converts the pin reading into battery voltage: <code>V_batt = V_pin × ratio</code>. Fine-tune it here if the reading is off.</div>
             <div class="range-row">
               <input type="range" id="batt-ratio-slider" min="1.0" max="10.0" value="3.0" step="0.01">
               <span class="range-value" id="batt-ratio-slider-val">3.00</span>
@@ -1052,9 +1063,18 @@
         <!-- ── Firmware ───────────────────────────────────────────────── -->
         <div class="tab-content" id="tab-firmware">
           <div class="card">
-            <div class="field-label">Installed</div>
-            <div class="version-big" id="fw-version">Firmware —</div>
-            <div id="ota-current-version">— (connect to the robot first)</div>
+            <h3><span class="ic"><svg class="i"><use href="#i-chip"/></svg></span>Rotato Version</h3>
+            <div class="kv ver-kv">
+              <span class="h">Processor</span>
+              <span class="k">Name</span>     <span class="v" id="ver-board">—</span>
+              <span class="k">Model</span>    <span class="v" id="ver-cpu">—</span>
+              <span class="k">Version</span>  <span class="v" id="ver-cpurev">—</span>
+              <span class="h">Electronics</span>
+              <span class="k">PCB</span>      <span class="v" id="ver-pcb">—</span>
+              <span class="h">Software</span>
+              <span class="k">Firmware</span> <span class="v" id="ver-fw">—</span>
+              <span class="k">Compiled</span> <span class="v" id="ver-built">—</span>
+            </div>
           </div>
 
           <div class="card">
@@ -1131,12 +1151,7 @@
         document.body.classList.remove('offline', 'booting');
         if (wasConnectedOnce) hudToast('Back online', 'Connection restored');
         wasConnectedOnce = true;
-        // Sync weapon acceleration settings to firmware on every (re)connect.
-        // The firmware may have NVS defaults that differ from the browser's
-        // localStorage — sending here ensures they always agree.
-        sendJSON({ type: 'weapon_accel',
-                   ramp_ms: appSettings.weaponRampMs,
-                   curve:   appSettings.weaponCurve });
+        // Weapon acceleration is stored on the robot and arrives in status.
       };
 
       ws.onclose = () => {
@@ -1217,11 +1232,32 @@
         document.getElementById('net-taken').style.display = data.hostTaken ? '' : 'none';
       }
 
+      // Invert Motors Direction is stored on the robot (it applies to every
+      // input). Show it only when the robot's value changes, so a half-edited
+      // settings panel isn't overwritten by every status message.
+      if (typeof data.driveReversed === 'boolean' && data.driveReversed !== robotDriveReversed) {
+        robotDriveReversed = data.driveReversed;
+        document.getElementById('drive-reversed').checked = robotDriveReversed;
+      }
+
+      // Weapon acceleration is stored on the robot too: same rule.
+      if (typeof data.weaponRampMs === 'number' &&
+          (data.weaponRampMs !== robotWeaponAccel.ramp || data.weaponCurve !== robotWeaponAccel.curve)) {
+        robotWeaponAccel = { ramp: data.weaponRampMs, curve: data.weaponCurve };
+        appSettings.weaponRampMs = data.weaponRampMs;
+        appSettings.weaponCurve  = data.weaponCurve;
+        saveAppSettings();
+        syncSettingsControls();
+      }
+
       // Firmware version — set only once (won't change without a reflash)
       if (data.fw) {
-        document.getElementById('fw-version').textContent = 'Firmware ' + data.fw;
-        document.getElementById('ota-current-version').textContent =
-          'PCB rev ' + (data.pcb || 'unknown');
+        document.getElementById('ver-fw').textContent    = data.fw;
+        document.getElementById('ver-pcb').textContent   = 'Rotato ' + (data.pcb || 'unknown');
+        document.getElementById('ver-board').textContent  = data.board || 'unknown';
+        document.getElementById('ver-cpu').textContent    = data.cpu || 'unknown';
+        document.getElementById('ver-cpurev').textContent = data.cpuRev !== undefined ? 'Rev ' + data.cpuRev : 'unknown';
+        document.getElementById('ver-built').textContent = data.built || 'unknown';
       }
 
       // Robot name — update page title, header, and identity tab field
@@ -1229,7 +1265,8 @@
         document.title = data.name + ' Controller';
         document.getElementById('robot-name').textContent = data.name;
         const nameInput = document.getElementById('identity-name');
-        if (document.activeElement !== nameInput) nameInput.value = data.name;
+        if (nameInput.value === robotNameShown) nameInput.value = data.name;   // untouched: follow the robot
+        robotNameShown = data.name;
       }
 
       // Sync weapon button state with robot (in case another client changed it)
@@ -1285,12 +1322,16 @@
 
     let appSettings = {
       driveMode: 'arcade', speedLimit: 100, deadzone: 5,
-      invertY: false, channelDrive: '', channelWeapon: '', bleEnabled: true,
+      channelDrive: '', channelWeapon: '', bleEnabled: true,
       theme: 'dark',
       weaponMode: 'button',   // 'button' | 'slider'
       weaponRampMs: 500,      // 0–3000 ms
       weaponCurve: 0          // 0=linear, 1=quadratic, 2=s-curve
     };
+
+    let robotNameShown     = '';     // robot name last put in the Name field
+    let robotDriveReversed = null;   // last Invert Motors Direction value the robot reported
+    let robotWeaponAccel   = {};     // last weapon ramp / curve the robot reported
 
     function saveAppSettings() {
       localStorage.setItem('rotato-settings', JSON.stringify(appSettings));
@@ -1308,7 +1349,7 @@
       document.getElementById('speed-limit-val').textContent = appSettings.speedLimit + '%';
       document.getElementById('deadzone').value              = appSettings.deadzone;
       document.getElementById('deadzone-val').textContent    = appSettings.deadzone + '%';
-      document.getElementById('invert-y').checked            = appSettings.invertY;
+      if (robotDriveReversed !== null) document.getElementById('drive-reversed').checked = robotDriveReversed;
       document.getElementById('ble-enabled').checked         = appSettings.bleEnabled;
       document.getElementById('ch-drive-name').value         = appSettings.channelDrive;
       document.getElementById('ch-weapon-name').value        = appSettings.channelWeapon;
@@ -1343,7 +1384,6 @@
       }
       let x = applyDZ(rawX);
       let y = applyDZ(rawY);
-      if (appSettings.invertY) y = -y;
       switch (appSettings.driveMode) {
         case 'expo':      x = expoCurve(x);      y = expoCurve(y);      break;
         case 'precision': x = precisionCurve(x); y = precisionCurve(y); break;
@@ -1825,8 +1865,8 @@
       appSettings.driveMode  = document.querySelector('input[name=drive-mode]:checked').value;
       appSettings.speedLimit = parseInt(document.getElementById('speed-limit').value);
       appSettings.deadzone   = parseInt(document.getElementById('deadzone').value);
-      appSettings.invertY    = document.getElementById('invert-y').checked;
       saveAppSettings();
+      sendJSON({ type: 'drive_reverse', reversed: document.getElementById('drive-reversed').checked });
       applyDriveLayout(appSettings.driveMode);
       settingsOverlay.classList.remove('open');
     });
@@ -2300,19 +2340,45 @@
     });
 
     // WiFi save
+    // Save & reboot: robot name, hotspot password and WiFi in one go. The robot
+    // saves whatever changed and reboots once.
     document.getElementById('wifi-save').addEventListener('click', () => {
-      const ssid = document.getElementById('wifi-ssid').value.trim();
-      const pass = document.getElementById('wifi-pass').value;
-      if (!ssid) { document.getElementById('wifi-ssid').focus(); return; }
-      if (confirm('Save WiFi settings and reboot the robot?')) {
-        sendJSON({ type: 'settings', ssid, pass });
-        settingsOverlay.classList.remove('open');
-      }
+      const nameEl = document.getElementById('identity-name');
+      const apEl   = document.getElementById('identity-ap-pass');
+      const ssid   = document.getElementById('wifi-ssid').value.trim();
+      const pass   = document.getElementById('wifi-pass').value;
+      const name   = nameEl.value.trim();
+      const apPass = apEl.value;
+      const errs = { name: 'identity-name-error', ap: 'identity-pass-error', wifi: 'wifi-error' };
+      Object.values(errs).forEach(id => document.getElementById(id).style.display = 'none');
+      const fail = (key, msg) => { const e = document.getElementById(errs[key]); e.textContent = msg; e.style.display = 'block'; };
+
+      const nameChanged = name !== robotNameShown;
+      const resetName   = !name && !isReservedName(robotNameShown);   // emptied = back to default
+      if (name && nameChanged && isReservedName(name))
+        return fail('name', 'Names like Rotato-XXXX are reserved for the default names.');
+      if (apPass && (apPass.length < 8 || apPass.length > 63))
+        return fail('ap', 'Password must be 8–63 characters.');
+      if (pass && !ssid)
+        return fail('wifi', 'Enter the WiFi network name too.');
+
+      const changes = [];
+      if (name && nameChanged) changes.push('name "' + name + '"');
+      if (resetName)           changes.push('default name');
+      if (apPass)              changes.push('hotspot password');
+      if (ssid)                changes.push('WiFi "' + ssid + '"');
+      if (!changes.length) return fail('wifi', 'Nothing changed.');
+      if (!confirm('Save ' + changes.join(', ') + ' and reboot the robot?')) return;
+
+      sendJSON({ type: 'network_save', ssid, pass,
+                 name: nameChanged ? name : '', resetName, apPass });
+      apEl.value = ''; document.getElementById('wifi-pass').value = '';
+      settingsOverlay.classList.remove('open');
     });
 
     // WiFi forget
     document.getElementById('wifi-forget').addEventListener('click', () => {
-      if (confirm('Clear saved WiFi credentials? The robot will reboot into Access Point mode.')) {
+      if (confirm('Forget WiFi? The robot reboots into its own hotspot, and its name and hotspot password go back to the defaults.')) {
         sendJSON({ type: 'forget' });
         settingsOverlay.classList.remove('open');
       }
@@ -2323,61 +2389,6 @@
     function isReservedName(name) {
       return /^Rotato-[0-9A-Fa-f]{4}$/i.test(name.trim());
     }
-
-    // Combined Save & Reboot — validates both fields then sends whichever changed.
-    // The robot only reboots once because the first message that triggers a reboot
-    // will restart before the second arrives, so we only send what's actually filled in.
-    // If both are filled, name is sent first (it reboots), so password is sent second
-    // on the next boot — which is fine because these are independent NVS keys.
-    // In practice users will typically only change one field at a time.
-    document.getElementById('identity-save').addEventListener('click', () => {
-      const nameEl    = document.getElementById('identity-name');
-      const nameErrEl = document.getElementById('identity-name-error');
-      const passEl    = document.getElementById('identity-ap-pass');
-      const passErrEl = document.getElementById('identity-pass-error');
-      const newName   = nameEl.value.trim();
-      const newPass   = passEl.value;
-
-      nameErrEl.style.display = 'none';
-      passErrEl.style.display = 'none';
-
-      // Validate name (if provided)
-      if (newName && isReservedName(newName)) {
-        nameErrEl.textContent = 'That name is reserved for hardware-generated default names (Rotato-XXXX).';
-        nameErrEl.style.display = 'block';
-        return;
-      }
-
-      // Validate password (if provided)
-      if (newPass && (newPass.length < 8 || newPass.length > 63)) {
-        passErrEl.textContent = 'Password must be 8–63 characters.';
-        passErrEl.style.display = 'block';
-        return;
-      }
-
-      if (!newName && !newPass) return;  // Nothing to save
-
-      const parts = [];
-      if (newName) parts.push('name to "' + newName + '"');
-      if (newPass) parts.push('AP password');
-      if (!confirm('Save ' + parts.join(' and ') + '? The robot will reboot.')) return;
-
-      // Send password first (if set) — then name triggers the reboot.
-      // If only password is set, it sends that and reboots.
-      if (newPass) sendJSON({ type: 'ap_password', pass: newPass });
-      if (newName) sendJSON({ type: 'rename', name: newName });
-      else if (newPass) { /* reboot already triggered by ap_password */ }
-
-      passEl.value = '';
-      settingsOverlay.classList.remove('open');
-    });
-
-    document.getElementById('identity-reset').addEventListener('click', () => {
-      if (confirm('Reset robot name to the hardware default (Rotato-XXXX)? The robot will reboot.')) {
-        sendJSON({ type: 'rename', name: '' });
-        settingsOverlay.classList.remove('open');
-      }
-    });
 
     // ── Battery calibration tab ────────────────────────────────────────────────
     let _lastBattV     = 0;
@@ -2829,6 +2840,40 @@
     // ── Start connection ───────────────────────────────────────────────────────
     document.body.classList.add('offline', 'booting');
     connectWebSocket();
-  </script>
+  
+    // ── Info tooltips: hover / focus on desktop, tap on touch screens ─────────
+    (function () {
+      const pop = document.createElement('div');
+      pop.id = 'tip-pop'; pop.setAttribute('role', 'tooltip');
+      document.body.appendChild(pop);
+      let current = null;
+      function show(btn) {
+        current = btn;
+        document.querySelectorAll('.info.open').forEach(b => b.classList.remove('open'));
+        btn.classList.add('open');
+        pop.innerHTML = btn.dataset.tip;
+        pop.classList.add('show');
+        const r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+        const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
+        let top = r.bottom + 8;
+        if (top + h > innerHeight - 8) top = r.top - h - 8;
+        pop.style.left = left + 'px'; pop.style.top = Math.max(8, top) + 'px';
+      }
+      function hide() {
+        if (current) current.classList.remove('open');
+        current = null; pop.classList.remove('show');
+      }
+      document.querySelectorAll('.info').forEach(btn => {
+        btn.addEventListener('mouseenter', () => show(btn));
+        btn.addEventListener('mouseleave', hide);
+        btn.addEventListener('focus', () => show(btn));
+        btn.addEventListener('blur', hide);
+        btn.addEventListener('click', e => { e.stopPropagation(); current === btn ? hide() : show(btn); });
+      });
+      document.addEventListener('click', hide);
+      document.addEventListener('scroll', hide, true);
+      addEventListener('resize', hide);
+    })();
+</script>
 </body>
 </html>

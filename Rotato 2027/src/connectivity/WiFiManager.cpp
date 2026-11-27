@@ -140,6 +140,44 @@ void WiFiManager::startAccessPoint() {
 
 // ── Robot identity ─────────────────────────────────────────────────────────────
 
+// "Rotato-XXXX" (4 hex digits) is reserved for the hardware default names.
+static bool isReservedName(const String& name) {
+    if (name.length() != 11 || !name.startsWith("Rotato-")) return false;
+    for (uint8_t i = 7; i < 11; i++)
+        if (!isxdigit((unsigned char)name[i])) return false;
+    return true;
+}
+
+bool WiFiManager::saveSettings(const String& ssid, const String& pass,
+                               const String& name, bool resetName, const String& apPass) {
+    if (name.length() && (name.length() > 32 || isReservedName(name))) {
+        Serial.println("[WiFi] saveSettings: name rejected.");
+        return false;
+    }
+    if (apPass.length() && (apPass.length() < 8 || apPass.length() > 63)) {
+        Serial.println("[WiFi] saveSettings: AP password must be 8-63 characters.");
+        return false;
+    }
+    if (!ssid.length() && !name.length() && !resetName && !apPass.length()) return false;
+
+    _prefs.begin(NVS_NAMESPACE, false);
+    if (ssid.length()) {
+        _prefs.putString(NVS_KEY_SSID, ssid);
+        _prefs.putString(NVS_KEY_PASS, pass);
+    }
+    if (name.length())   _prefs.putString(NVS_KEY_NAME, name);
+    else if (resetName)  _prefs.remove(NVS_KEY_NAME);
+    if (apPass.length()) _prefs.putString(NVS_KEY_AP_PASS, apPass);
+    _prefs.end();
+
+    Serial.printf("[WiFi] Saved:%s%s%s%s. Rebooting...\n",
+                  ssid.length() ? " WiFi" : "", name.length() ? " name" : "",
+                  resetName && !name.length() ? " default-name" : "", apPass.length() ? " AP-password" : "");
+    delay(500);
+    ESP.restart();
+    return true;
+}
+
 bool WiFiManager::saveRobotName(const String& name) {
     // Validate: not empty, not too long, not reserved "Rotato-XXXX" pattern
     if (name.isEmpty() || name.length() > 32) return false;

@@ -67,7 +67,7 @@ The robot accepts a *new* controller only in these cases: it has never paired on
 |---------|--------|
 | Left stick | Drive (up = forward, sideways = turn) |
 | D-pad | Slow drive |
-| Hold LB | Precision mode (slower, finer control) |
+| Hold LB | Precision mode (slower, finer control) — three quick high ticks when it turns on, one low blip when it turns off |
 | RT (right trigger) | Weapon throttle. The weapon spins only while you hold it |
 | B | Stop the weapon (release RT to re-enable it) |
 | A | Little error sound |

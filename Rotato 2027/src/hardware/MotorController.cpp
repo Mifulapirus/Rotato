@@ -55,6 +55,24 @@ void MotorController::writeDriveMotor(uint8_t chIn1, uint8_t chIn2, float speed,
 // ── Public methods ────────────────────────────────────────────────────────────
 
 void MotorController::begin() {
+    {
+        Preferences p;
+        if (p.begin("robot_drive", true)) {          // fails if never saved yet
+            _driveReversed = p.getBool("reversed", false);
+            p.end();
+        }
+        if (_driveReversed) Serial.println("[Motors] Motors direction inverted (setting).");
+    }
+    // Weapon acceleration saved by setWeaponRamp() / setWeaponCurve()
+    if (_weaponPrefs.begin("robot_weapon", true)) {  // fails if never saved yet
+        _weaponRampMs = _weaponPrefs.getUShort("ramp_ms", WEAPON_RAMP_MS_DEFAULT);
+        _weaponCurve  = _weaponPrefs.getUChar("curve", WEAPON_CURVE_DEFAULT);
+        _weaponPrefs.end();
+        if (_weaponCurve > 2) _weaponCurve = WEAPON_CURVE_DEFAULT;
+    }
+    Serial.printf("[Motors] Weapon ramp %u ms, curve %u.\n", _weaponRampMs, _weaponCurve);
+
+
     // Set up LEDC channels and attach them to their GPIO pins.
     // The LEDC peripheral is ESP32's hardware PWM generator.
 
@@ -103,6 +121,11 @@ void MotorController::setDrive(float x, float y) {
     //   Right = 0.8 - 0.5 = 0.3 (partial forward)
     //   Result: robot turns right while going forward ✓
 
+    // "Invert Motors Direction": the back becomes the front. Flipping only Y
+    // keeps turns matching the stick (spin right is still clockwise).
+    // DRIVE_FORWARD_FLIPPED (config.h) sets the default front.
+    if (_driveReversed != DRIVE_FORWARD_FLIPPED) y = -y;
+
     float leftSpeed  = y + x;
     float rightSpeed = y - x;
 
@@ -117,6 +140,16 @@ void MotorController::setDrive(float x, float y) {
 
     Serial.printf("[Motors] Drive x=%.2f y=%.2f -> L=%.2f R=%.2f\n",
                   x, y, leftSpeed, rightSpeed);
+}
+
+void MotorController::setDriveReversed(bool reversed) {
+    _driveReversed = reversed;
+    Preferences p;
+    if (p.begin("robot_drive", false)) {
+        p.putBool("reversed", reversed);
+        p.end();
+    }
+    Serial.printf("[Motors] Motors direction %s.\n", reversed ? "inverted" : "normal");
 }
 
 void MotorController::setWeapon(bool active) {

@@ -66,6 +66,13 @@ public:
     // Pass must be >= 8 characters (WPA2 minimum).
     bool saveApPassword(const String& pass);
 
+    // Save any combination of settings with ONE reboot (the Network tab's
+    // Save & reboot). Empty strings mean "leave unchanged"; resetName = go back
+    // to the default name. Validates everything first: returns false and saves
+    // nothing if the name is reserved/too long or the AP password isn't 8-63.
+    bool saveSettings(const String& ssid, const String& pass,
+                      const String& name, bool resetName, const String& apPass);
+
     // Returns the currently active AP password (custom or compiled-in default).
     String getApPassword() const { return _apPassword; }
 

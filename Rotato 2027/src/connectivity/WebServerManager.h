@@ -21,8 +21,11 @@
 //   Weapon:  {"type":"weapon","active":true}
 //   WiFi:    {"type":"settings","ssid":"MyNetwork","pass":"password123"}
 //   Forget:  {"type":"forget"}
+//   Save:    {"type":"network_save","ssid":"","pass":"","name":"","resetName":false,"apPass":""}
+//            — any of WiFi / name / hotspot password, one reboot ("" = unchanged)
 //   Gamepad: {"type":"gamepad_pair"}    — open the controller pairing window
 //            {"type":"gamepad_forget"}  — forget all paired controllers
+//   Invert:  {"type":"drive_reverse","reversed":true} — invert motors direction (all inputs)
 //
 // JSON PROTOCOL (Robot → Browser, every 500ms):
 //   {"battery":85,"safety":true,"ip":"192.168.4.1","weapon":false,"fw":"1.0.0+42"}
@@ -50,10 +53,13 @@ using ForgetCallback      = std::function<void()>;
 using BleEnableCallback   = std::function<void(bool enabled)>;
 using RenameCallback      = std::function<void(const String& name)>;
 using ApPasswordCallback  = std::function<void(const String& pass)>;
+using NetworkSaveCallback = std::function<void(const String& ssid, const String& pass,
+                                               const String& name, bool resetName, const String& apPass)>;
 using BatteryCalibCallback  = std::function<void(float ratio)>;
 using BatteryCellsCallback  = std::function<void(uint8_t cells)>;
 using EscCalibrateCallback  = std::function<void()>;  // Trigger full-range ESC calibration
 using GamepadCommandCallback = std::function<void()>; // Gamepad pair / forget
+using DriveReverseCallback   = std::function<void(bool reversed)>;
 
 class WebServerManager {
 public:
@@ -74,11 +80,13 @@ public:
     void onBleEnable(BleEnableCallback cb)     { _bleEnableCallback = cb; }
     void onRename(RenameCallback cb)           { _renameCallback = cb; }
     void onApPassword(ApPasswordCallback cb)   { _apPasswordCallback = cb; }
+    void onNetworkSave(NetworkSaveCallback cb) { _networkSaveCallback = cb; }
     void onBatteryCalib(BatteryCalibCallback cb)    { _batteryCalibCallback = cb; }
     void onBatteryCells(BatteryCellsCallback cb)    { _batteryCellsCallback = cb; }
     void onEscCalibrate(EscCalibrateCallback cb)    { _escCalibrateCallback = cb; }
     void onGamepadPair(GamepadCommandCallback cb)   { _gamepadPairCallback = cb; }
     void onGamepadForget(GamepadCommandCallback cb) { _gamepadForgetCallback = cb; }
+    void onDriveReverse(DriveReverseCallback cb)    { _driveReverseCallback = cb; }
     void onRobotsScan(GamepadCommandCallback cb)    { _robotsScanCallback = cb; }
     void onBtScan(GamepadCommandCallback cb)        { _btScanCallback = cb; }
 
@@ -88,6 +96,11 @@ public:
     // Game controller state, included in the next status broadcast.
     //   state: "disabled" | "searching" | "pairing" | "connecting" | "connected"
     void setGamepadStatus(const char* state, const String& name) { _gamepadState = state; _gamepadName = name; }
+
+    // Saved "Invert Motors Direction" setting, reported in status so every browser agrees.
+    void setDriveReversed(bool on) { _driveReversed = on; }
+    // Saved weapon acceleration, reported in status for the same reason.
+    void setWeaponAccel(uint16_t rampMs, uint8_t curve) { _weaponRampMs = rampMs; _weaponCurve = curve; }
 
     // Send a pre-built JSON message to every connected browser (no-op if none).
     void broadcastText(const char* json) { if (_ws.count() > 0) _ws.textAll(json); }
@@ -118,11 +131,16 @@ private:
     BleEnableCallback   _bleEnableCallback;
     RenameCallback      _renameCallback;
     ApPasswordCallback  _apPasswordCallback;
+    NetworkSaveCallback _networkSaveCallback;
     BatteryCalibCallback  _batteryCalibCallback;
     BatteryCellsCallback  _batteryCellsCallback;
     EscCalibrateCallback  _escCalibrateCallback;
     GamepadCommandCallback _gamepadPairCallback;
     GamepadCommandCallback _gamepadForgetCallback;
+    DriveReverseCallback   _driveReverseCallback;
+    bool                   _driveReversed = false;
+    uint16_t               _weaponRampMs  = WEAPON_RAMP_MS_DEFAULT;
+    uint8_t                _weaponCurve   = WEAPON_CURVE_DEFAULT;
     GamepadCommandCallback _robotsScanCallback;
     GamepadCommandCallback _btScanCallback;
     String                _hostname;

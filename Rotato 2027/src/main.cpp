@@ -232,6 +232,11 @@ void setup() {
         }
     });
 
+    webServer.onNetworkSave([](const String& ssid, const String& pass,
+                               const String& name, bool resetName, const String& apPass) {
+        wifi.saveSettings(ssid, pass, name, resetName, apPass);   // reboots if saved
+    });
+
     webServer.onApPassword([](const String& pass) {
         wifi.saveApPassword(pass);  // saves + reboots
     });
@@ -320,13 +325,20 @@ void setup() {
         else           buzzer.beepError();
     });
     gamepad.onButtonPress([](uint32_t pressed) {
-        if (pressed & GamepadManager::BTN_A) buzzer.beepNope();   // A = little error sound
+        if (pressed & GamepadManager::BTN_A)  buzzer.beepNope();         // A = little error sound
+        if (pressed & GamepadManager::BTN_LB) buzzer.beepPrecisionOn();  // precision mode on
+    });
+    gamepad.onButtonRelease([](uint32_t released) {
+        if (released & GamepadManager::BTN_LB) buzzer.beepPrecisionOff();
     });
     webServer.onRobotsScan([]()    { discovery.requestScan(); });
     webServer.onBtScan([]()        { BtNearby::requestScan(BT_NEARBY_SCAN_MS); });
     webServer.setHostname(String(discovery.hostname()) + ".local", discovery.preferredTaken());
     webServer.onGamepadPair([]()   { gamepad.startPairing(); });
     webServer.onGamepadForget([]() { gamepad.forgetAll(); });
+    webServer.onDriveReverse([](bool on) { motors.setDriveReversed(on); });
+    webServer.setDriveReversed(motors.isDriveReversed());
+    webServer.setWeaponAccel(motors.getWeaponRampMs(), motors.getWeaponCurve());
     gamepad.begin();
 
     // ── 6. Ready ─────────────────────────────────────────────────────────────

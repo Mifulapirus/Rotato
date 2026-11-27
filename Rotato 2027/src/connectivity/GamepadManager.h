@@ -73,6 +73,8 @@ public:
     // Fires once per press (on the press, not while held) with the BTN_* bits
     // that just went down. Runs on the loop task.
     void onButtonPress(ButtonCallback cb)      { _buttonCallback = cb; }
+    // Same, for the BTN_* bits that were just let go.
+    void onButtonRelease(ButtonCallback cb)    { _releaseCallback = cb; }
 
     // Start the background task. Initializes NimBLE if BLEManager hasn't.
     void begin();
@@ -120,6 +122,7 @@ private:
     WeaponSpeedCallback _weaponCallback;
     ConnectionCallback  _connCallback;
     ButtonCallback      _buttonCallback;
+    ButtonCallback      _releaseCallback;
 
     // Shared between tasks
     volatile Phase    _phase          = Phase::INACTIVE;

@@ -171,6 +171,12 @@
 #define MOTOR_LEFT_REVERSED   false
 #define MOTOR_RIGHT_REVERSED  true
 
+// Which end of the robot is the front when "Invert Motors Direction" is OFF.
+// true = the opposite end from what the wiring flags above give. Only forward
+// and backward swap; turns still follow the stick. The web UI switch flips
+// this again at runtime.
+#define DRIVE_FORWARD_FLIPPED true
+
 // ── Battery Monitor ───────────────────────────────────────────────────────────
 //
 // Supports 2S (7.4V) and 3S (11.1V) LiPo packs. Battery type is selectable

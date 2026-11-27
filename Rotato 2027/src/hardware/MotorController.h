@@ -40,6 +40,13 @@ public:
     // Internally applies arcade mixing to derive left and right wheel speeds.
     void setDrive(float x, float y);
 
+    // Invert motors direction: swaps which end of the robot is the front.
+    // Every input (web joystick, game controller, BLE app) keeps "up = up";
+    // only the motors flip. Turning still matches the stick, like steering a
+    // car in reverse. Saved in flash, loaded by begin().
+    void setDriveReversed(bool reversed);
+    bool isDriveReversed() const { return _driveReversed; }
+
     // Activate or deactivate the weapon motor at full speed (ON/OFF button mode).
     //   active = true  → ramp to full speed
     //   active = false → ramp to stop
@@ -101,6 +108,7 @@ private:
     uint8_t  _weaponCurve        = WEAPON_CURVE_DEFAULT;
     uint32_t _lastRampTick_ms    = 0;
     Preferences _weaponPrefs;
+    volatile bool _driveReversed = false;   // see setDriveReversed()
 
     // ESC arming state
     bool     _escReady     = false;

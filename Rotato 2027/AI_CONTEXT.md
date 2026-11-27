@@ -189,6 +189,7 @@ Endpoint: `ws://<robot-ip>/ws`
 { "type": "bleEnable",    "enabled": true }
 { "type": "gamepad_pair" }      // open the controller pairing window (GAMEPAD_PAIR_WINDOW_MS)
 { "type": "gamepad_forget" }    // disconnect + delete all BLE bonds
+{ "type": "drive_reverse", "reversed": true }  // Invert Motors Direction: flips Y in MotorController::setDrive for ALL inputs; echoed as status "driveReversed"
 { "type": "bt_scan" }           // scan for nearby BLE devices for BT_NEARBY_SCAN_MS (15 s) → "bt_nearby" messages
 { "type": "robots_scan" }       // mDNS query for other robots → robot replies with a "robots" message (~3 s)
 ```
@@ -197,9 +198,9 @@ Endpoint: `ws://<robot-ip>/ws`
 ```json
 {
   "battery": 85, "voltage": 7.8, "ratio": 3.64, "safety": true,
-  "ip": "192.168.4.1", "weapon": false, "fw": "2.0", "pcb": "1.0",
+  "ip": "192.168.4.1", "weapon": false, "fw": "2.2", "pcb": "2.0", "board": "WEMOS D1 MINI ESP32", "cpu": "ESP32-D0WD-V3", "cpuRev": 3, "built": "2026-11-26 09:03:16",
   "name": "Rotato-A3F2", "escReady": true, "escCalib": "idle", "weaponSpeedPct": 0,
-  "gamepad": "connected", "gamepadName": "Xbox Wireless Controller"
+  "gamepad": "connected", "gamepadName": "Xbox Wireless Controller", "driveReversed": false, "weaponRampMs": 500, "weaponCurve": 0
 }
 // gamepad: "disabled" | "searching" | "pairing" | "connecting" | "connected"
 ```
@@ -264,6 +265,7 @@ Settings persisted via Arduino `Preferences`. Scattered across multiple `.cpp` f
 | `motor` | `curve` | UInt8 | MotorController | `WEAPON_CURVE_DEFAULT` (config.h) |
 | `motor` | `half_range` | UInt16 | MotorController | `PWM_DRIVE_HALF_RANGE_US` (config.h) |
 | `battery` | `r_ratio` | Float | BatteryMonitor | `BATTERY_R_RATIO` (config.h) |
+| `robot_drive` | `reversed` | bool | MotorController | Invert Motors Direction (front and back swapped) for every input; set from the web UI |
 | (NimBLE internal) | BLE bonds | — | NimBLE stack (GamepadManager) | Paired controllers; cleared by `gamepad_forget` |
 
 ---

@@ -48,6 +48,8 @@ public:
     void beepWeaponOff();   // Weapon deactivated
     void beepError();       // Something went wrong
     void beepNope();        // Short "nope" (little error sound)
+    void beepPrecisionOn();  // Precision mode on  (controller LB pressed)
+    void beepPrecisionOff(); // Precision mode off (controller LB released)
 
     // Must be called from loop() — advances the current beep sequence
     void update();
@@ -82,6 +84,8 @@ public:
     void beepWeaponOff() {}
     void beepError()     {}
     void beepNope()      {}
+    void beepPrecisionOn()  {}
+    void beepPrecisionOff() {}
     void update()        {}
     bool isBusy() const  { return false; }
 };
