@@ -466,6 +466,8 @@
     #tip-pop.show { opacity: 1; }
     #tip-pop em { font-style: normal; font-weight: 700; }
     .setting-desc a { color: var(--cyan); }
+    .ext-link { color: var(--cyan); font-family: var(--mono); font-size: .9rem; text-decoration: none; }
+    .ext-link:hover { text-decoration: underline; }
     .tip { display: flex; gap: 10px; padding: 11px 14px; border-left: 3px solid var(--cyan); background: var(--cyan-soft); color: var(--ink); font-size: .85rem; }
     .tip.warn { border-left-color: var(--warn); background: var(--warn-soft); }
     .field { display: flex; flex-direction: column; gap: 8px; }
@@ -753,9 +755,9 @@
           <button class="tab" data-tab="channels"><svg class="i"><use href="#i-bolt"/></svg>Weapon</button>
           <button class="tab" data-tab="ble"><svg class="i"><use href="#i-bt"/></svg>Bluetooth</button>
           <button class="tab" data-tab="wifi"><svg class="i"><use href="#i-wifi"/></svg>Network</button>
-          <button class="tab" data-tab="identity"><svg class="i"><use href="#i-bot"/></svg>Robot</button>
           <button class="tab" data-tab="battery"><svg class="i"><use href="#i-batt"/></svg>Battery</button>
           <button class="tab" data-tab="firmware"><svg class="i"><use href="#i-chip"/></svg>Firmware</button>
+          <button class="tab" data-tab="wpfl"><svg class="i"><use href="#i-bot"/></svg>WPFL</button>
         </nav>
       </aside>
 
@@ -1012,8 +1014,20 @@
           </div>
         </div>
 
-        <!-- ── Robot (identity) ───────────────────────────────────────── -->
-        <div class="tab-content" id="tab-identity">
+        <!-- ── WPFL ───────────────────────────────────────────────────── -->
+        <div class="tab-content" id="tab-wpfl">
+          <div class="card">
+            <h3><span class="ic"><svg class="i"><use href="#i-rotor"/></svg></span>Rotato</h3>
+            <a class="ext-link" href="https://rotato.thehomelab.dev/" target="_blank" rel="noopener noreferrer">rotato.thehomelab.dev ↗</a>
+          </div>
+          <div class="card">
+            <h3><span class="ic"><svg class="i"><use href="#i-tag"/></svg></span>Rotato classes</h3>
+            <a class="ext-link" href="https://wpfl.asmbly.org/rotato" target="_blank" rel="noopener noreferrer">wpfl.asmbly.org/rotato ↗</a>
+          </div>
+          <div class="card">
+            <h3><span class="ic"><svg class="i"><use href="#i-bolt"/></svg></span>WPFL</h3>
+            <a class="ext-link" href="https://wpfl.thehomelab.dev/" target="_blank" rel="noopener noreferrer">wpfl.thehomelab.dev ↗</a>
+          </div>
           <div class="card">
             <h3><span class="ic"><svg class="i"><use href="#i-gear"/></svg></span>Need parts?</h3>
             <div class="setting-desc">Contact the Rotato team at <a href="mailto:rotato@thehomelab.dev">rotato@thehomelab.dev</a></div>
